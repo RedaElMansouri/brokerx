@@ -1,6 +1,6 @@
 # BrokerX+ — Documentation Arc42 (v1)
 
-Ce document suit la structure Arc42 (sections 1 à 12) et référence la documentation existante (4+1, plan Phase 2, dépôts de code) sans duplication inutile. Les sections intègrent des liens vers les artefacts pertinents, des images et des extraits de code issus du dépôt.
+Ce document suit la structure Arc42 (sections 1 à 12) et référence la documentation existante (4+1, plan Phase 2, dépôts de code). Les sections intègrent des liens vers les artefacts pertinents, des images et des extraits de code issus du dépôt.
 
 ---
 

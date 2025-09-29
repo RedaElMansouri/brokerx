@@ -48,8 +48,8 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bin/rails db:create
-          bin/rails db:migrate
+          bundle exec rails db:create
+          bundle exec rails db:migrate
 
       - name: Run tests (Minitest or RSpec)
         env:
@@ -58,7 +58,7 @@ jobs:
           if [ -d "spec" ] && ls spec/*.rb 1> /dev/null 2>&1; then
             bundle exec rspec --format documentation
           else
-            bin/rails test
+            bundle exec rails test
           fi
 
       - name: Upload coverage (optional)
