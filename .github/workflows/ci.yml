@@ -26,7 +26,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.2.2'
           bundler-cache: true
 
       - name: Cache node modules (optional if JS assets later)
@@ -42,7 +42,7 @@ jobs:
 
       - name: Prepare database.yml for CI
         run: |
-          ruby -e "c=File.read('config/database.yml'); c=c.gsub(/database: .*/, 'database: brokerx_test'); c=c.gsub(/username: .*/, 'username: brokerx'); c=c.gsub(/password: .*/, 'password: brokerxpass'); c=c.gsub(/host: .*/, 'host: localhost'); File.write('config/database.yml', c)"
+          ruby -e "c=File.read('config/database.yml'); c=c.gsub(/database: .*/, 'database: brokerx_test'); c=c.gsub(/username: .*/, 'username: brokerx'); c=c.gsub(/password: .*/, 'password: password'); c=c.gsub(/host: .*/, 'host: localhost'); File.write('config/database.yml', c)"
 
       - name: DB setup
         env:
