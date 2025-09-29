@@ -223,6 +223,17 @@ Tableau d’objectifs (exemple minimal):
 P95 Auth < 200 ms | P95 Order < 300 ms | 5xx < 1% | CPU P95 < 75%
 ```
 
+### Note de statut (tests & couverture)
+
+- Les tests de couverture n'ont pas fonctionné dans la CI actuelle (instrumentation non activée/instable).
+- La mise en place de la couverture (SimpleCov) et l'élargissement de la pyramide de tests (unitaires → intégration → E2E) seront réalisés en Phase 2.
+- Cibles Phase 2:
+  - ≥ 80% sur les domaines critiques (Value Objects, Entités, Services, Repositories)
+  - Au moins 1 scénario E2E clé orchestré de bout en bout
+- Actions prévues:
+  - Activer SimpleCov (local/CI), produire le rapport `coverage/` et publier l'artefact CI
+  - Ajouter des tests d'intégration API et un scénario E2E (register → verify → login → verify_mfa → place order)
+
 ## 11. Risques & Dette technique
 - Double définition AR (`ClientRecord`) → "superclass mismatch" (corriger en supprimant le doublon)
 - Absence de vérification de mot de passe (prototype) → durcir auth

@@ -1,4 +1,8 @@
 <div class="container" style="padding-top:80px;">
+  <header style="position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#0f172a;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.1);z-index:50;">
+    <div id="welcomeName" style="font-weight:600;">Bienvenue</div>
+    <button id="headerLogoutBtn" type="button" style="background:#e53e3e;color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;">Déconnexion</button>
+  </header>
   <section class="feature-card" style="max-width:720px;margin:0 auto;">
     <h1>Passer un ordre</h1>
 
@@ -29,13 +33,38 @@
 
       <div style="display:flex;gap:12px;align-items:center;">
         <button type="submit" class="cta-button">Envoyer l'ordre</button>
-        <button id="logoutBtn" type="button" style="background:#e53e3e;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Déconnexion</button>
         <span id="orderFeedback" style="color:#e53e3e"></span>
       </div>
     </form>
   </section>
 
   <script>
+    (function() {
+      try {
+        const raw = localStorage.getItem('auth_user');
+        let name = 'Bienvenue';
+        if (raw) {
+          const user = JSON.parse(raw);
+          name = `Bienvenue ${user.full_name || [user.first_name, user.last_name].filter(Boolean).join(' ')}`.trim();
+        }
+        document.getElementById('welcomeName').textContent = name;
+      } catch (e) {
+      }
+    })();
+
+    // Header logout
+    (function() {
+      const btn = document.getElementById('headerLogoutBtn');
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          window.location.href = '/';
+        });
+      }
+    })();
+
     document.getElementById('orderForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const token = localStorage.getItem('auth_token');
@@ -68,14 +97,5 @@
         feedback.textContent = 'Impossible de contacter le serveur';
       }
     });
-    // Logout handler
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('auth_token');
-        window.location.href = '/';
-      });
-    }
   </script>
 </div>

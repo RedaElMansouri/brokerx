@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_28_192000) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_28_193010) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -34,12 +34,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_28_192000) do
   end
 
   create_table "portfolios", force: :cascade do |t|
-    t.uuid "account_id", null: false
     t.string "currency", null: false
     t.decimal "available_balance", precision: 15, scale: 2, default: "0.0"
     t.decimal "reserved_balance", precision: 15, scale: 2, default: "0.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
     t.index ["account_id"], name: "index_portfolios_on_account_id", unique: true
     t.index ["currency"], name: "index_portfolios_on_currency"
   end
