@@ -1,0 +1,69 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: brokerx_test
+          POSTGRES_USER: brokerx
+          POSTGRES_PASSWORD: password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U brokerx -d brokerx_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Cache node modules (optional if JS assets later)
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Prepare database.yml for CI
+        run: |
+          ruby -e "c=File.read('config/database.yml'); c=c.gsub(/database: .*/, 'database: brokerx_test'); c=c.gsub(/username: .*/, 'username: brokerx'); c=c.gsub(/password: .*/, 'password: brokerxpass'); c=c.gsub(/host: .*/, 'host: localhost'); File.write('config/database.yml', c)"
+
+      - name: DB setup
+        env:
+          RAILS_ENV: test
+        run: |
+          bin/rails db:create
+          bin/rails db:migrate
+
+      - name: Run tests (Minitest or RSpec)
+        env:
+          RAILS_ENV: test
+        run: |
+          if [ -d "spec" ] && ls spec/*.rb 1> /dev/null 2>&1; then
+            bundle exec rspec --format documentation
+          else
+            bin/rails test
+          fi
+
+      - name: Upload coverage (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/

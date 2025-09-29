@@ -1,0 +1,145 @@
+```plantuml
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b>+ {x}</b>
+!define foreign_key(x) + {x}
+!define unique(x) <color:blue>{x}</color>
+
+title Schéma de Base de Données - BrokerX+
+
+table(clients) {
+    primary_key(id: UUID)
+    unique(email: VARCHAR(255))
+    phone: VARCHAR(20)
+    first_name: VARCHAR(100)
+    last_name: VARCHAR(100)
+    date_of_birth: DATE
+    status: VARCHAR(20) -- 'pending', 'active', 'suspended', 'rejected'
+    verification_token: VARCHAR(255)
+    verified_at: TIMESTAMPTZ
+    created_at: TIMESTAMPTZ
+    updated_at: TIMESTAMPTZ
+}
+
+table(accounts) {
+    primary_key(id: UUID)
+    foreign_key(client_id: UUID) -> clients.id
+    account_number: VARCHAR(20)
+    type: VARCHAR(20) -- 'individual', 'corporate'
+    status: VARCHAR(20) -- 'active', 'suspended', 'closed'
+    created_at: TIMESTAMPTZ
+    updated_at: TIMESTAMPTZ
+}
+
+table(portfolios) {
+    primary_key(id: UUID)
+    foreign_key(account_id: UUID) -> accounts.id
+    currency: VARCHAR(3) -- 'USD', 'EUR'
+    available_balance: DECIMAL(15,2)
+    reserved_balance: DECIMAL(15,2)
+    total_balance: DECIMAL(15,2) -- generated column
+    created_at: TIMESTAMPTZ
+    updated_at: TIMESTAMPTZ
+}
+
+table(portfolio_transactions) {
+    primary_key(id: UUID)
+    foreign_key(portfolio_id: UUID) -> portfolios.id
+    type: VARCHAR(20) -- 'deposit', 'withdrawal', 'trade', 'fee'
+    amount: DECIMAL(15,2)
+    description: TEXT
+    status: VARCHAR(20) -- 'pending', 'completed', 'failed'
+    metadata: JSONB
+    created_at: TIMESTAMPTZ
+}
+
+table(instruments) {
+    primary_key(id: UUID)
+    symbol: VARCHAR(10) -- 'AAPL', 'MSFT'
+    name: VARCHAR(255)
+    type: VARCHAR(20) -- 'stock', 'etf', 'bond'
+    currency: VARCHAR(3)
+    status: VARCHAR(20) -- 'active', 'suspended', 'delisted'
+    min_price: DECIMAL(15,4)
+    max_price: DECIMAL(15,4)
+    tick_size: DECIMAL(10,4)
+    lot_size: INTEGER
+    created_at: TIMESTAMPTZ
+    updated_at: TIMESTAMPTZ
+}
+
+table(orders) {
+    primary_key(id: UUID)
+    foreign_key(account_id: UUID) -> accounts.id
+    foreign_key(instrument_id: UUID) -> instruments.id
+    client_order_id: VARCHAR(50) -- idempotency key
+    type: VARCHAR(10) -- 'market', 'limit'
+    direction: VARCHAR(4) -- 'buy', 'sell'
+    quantity: INTEGER
+    filled_quantity: INTEGER
+    remaining_quantity: INTEGER
+    limit_price: DECIMAL(15,4) -- NULL for market orders
+    status: VARCHAR(20) -- 'new', 'working', 'filled', 'cancelled'
+    time_in_force: VARCHAR(10) -- 'day', 'ioc', 'fok'
+    created_at: TIMESTAMPTZ
+    updated_at: TIMESTAMPTZ
+    version: INTEGER -- optimistic locking
+    }
+
+table(trades) {
+    primary_key(id: UUID)
+    foreign_key(buy_order_id: UUID) -> orders.id
+    foreign_key(sell_order_id: UUID) -> orders.id
+    foreign_key(instrument_id: UUID) -> instruments.id
+    quantity: INTEGER
+    price: DECIMAL(15,4)
+    trade_time: TIMESTAMPTZ
+    created_at: TIMESTAMPTZ
+}
+
+table(market_data) {
+    primary_key(id: UUID)
+    foreign_key(instrument_id: UUID) -> instruments.id
+    bid_price: DECIMAL(15,4)
+    ask_price: DECIMAL(15,4)
+    last_price: DECIMAL(15,4)
+    volume: BIGINT
+    timestamp: TIMESTAMPTZ
+    created_at: TIMESTAMPTZ
+}
+
+table(audit_logs) {
+    primary_key(id: UUID)
+    event_type: VARCHAR(50)
+    user_id: UUID
+    resource_type: VARCHAR(50)
+    resource_id: UUID
+    old_values: JSONB
+    new_values: JSONB
+    ip_address: INET
+    user_agent: TEXT
+    created_at: TIMESTAMPTZ
+}
+
+' Relations
+clients ||--o{ accounts : has
+accounts ||--o{ portfolios : has
+portfolios ||--o{ portfolio_transactions : has
+accounts ||--o{ orders : places
+instruments ||--o{ orders : traded_as
+instruments ||--o{ trades : involved_in
+orders ||--o{ trades : results_in
+
+note top of portfolios
+    total_balance = available_balance + reserved_balance
+    Constraint: available_balance >= 0
+    Constraint: reserved_balance >= 0
+end note
+
+note top of orders
+    Constraint: quantity > 0
+    Constraint: filled_quantity <= quantity
+    Constraint: remaining_quantity = quantity - filled_quantity
+    Constraint: limit_price NULL for market orders
+end note
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+actor "Client" as client
+participant "Web Controller" as controller
+participant "PlaceOrderService" as service
+participant "PortfolioRepository" as portfolio
+participant "OrderBook" as orderbook
+database "PostgreSQL" as db
+
+client -> controller: POST /orders
+activate controller
+
+controller -> service: execute(order_dto)
+activate service
+
+service -> portfolio: find_by_account(account_id)
+activate portfolio
+portfolio -> db: SELECT * FROM portfolios\nWHERE account_id = ?
+portfolio --> service: portfolio
+deactivate portfolio
+
+service -> service: validate_sufficient_funds(portfolio, order)
+service -> service: reserve_funds(portfolio, order_amount)
+
+par Concurrent Order Placement
+    service -> orderbook: add_order(order)
+    activate orderbook
+    orderbook -> db: INSERT INTO orders\nWITH row-level lock
+    orderbook --> service: order_id
+    deactivate orderbook
+    
+else Portfolio Update
+    service -> portfolio: update_balance(portfolio, reserved_amount)
+    activate portfolio
+    portfolio -> db: UPDATE portfolios\nSET balance = balance - ?\nWHERE id = ?\nAND version = ?
+    portfolio --> service: success
+    deactivate portfolio
+end
+
+service --> controller: order_ack
+deactivate service
+
+controller --> client: 201 Created with Order ID
+deactivate controller
+@enduml

@@ -1,0 +1,16 @@
+Bonjour,
+
+Merci de vous être inscrit sur BrokerX+.
+
+Pour confirmer votre adresse e-mail, utilisez ce code de vérification :
+
+<%= @token %>
+
+Ou cliquez sur le lien suivant :
+
+<%= "#{root_url}api/v1/clients/verify?token=#{@token}" %>
+
+Ce code expire dans 24 heures.
+
+Cordialement,
+L'équipe BrokerX+

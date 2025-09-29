@@ -1,0 +1,26 @@
+# .dockerignore
+.git
+.gitignore
+README.md
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# Logs
+log/*
+tmp/*
+
+# Environnements de test
+spec/*
+test/*
+
+# Node modules
+node_modules/
+
+# Fichiers temporaires
+*.swp
+*.swo
+
+# Fichiers de configuration locale
+.env.local
+.env.*.local

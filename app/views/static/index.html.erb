@@ -1,0 +1,345 @@
+
+
+<!-- Header -->
+<header class="header">
+  <div class="container">
+    <nav class="nav">
+      <div class="logo">Broker<span>X+</span></div>
+      <ul class="nav-links">
+        <li><a href="#features">Fonctionnalités</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#status">État</a></li>
+        <li><a href="https://github.com/votre-repo" target="_blank">GitHub</a></li>
+      </ul>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <a id="createBtn" class="cta-button" href="#" style="background:#48bb78;color:#fff">Créer un compte</a>
+        <a id="loginBtn" class="cta-button" href="#">Se connecter</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Plateforme de Courtage Moderne</h1>
+            <p>Architecture Hexagonale • Domain-Driven Design • Microservices Ready</p>
+            <a href="#features" class="cta-button">Découvrir l'Architecture</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Fonctionnalités Principales</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏦</div>
+                    <h3>Gestion des Clients</h3>
+                    <p>Inscription sécurisée, vérification d'identité, et gestion des portefeuilles virtuels</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💱</div>
+                    <h3>Trading en Temps Réel</h3>
+                    <p>Ordres marché/limite avec contrôles pré-trade et appariement interne</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Données de Marché</h3>
+                    <p>Flux temps réel, cotations, et carnets d'ordres pour prise de décision</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="architecture">
+        <div class="container">
+            <h2 class="section-title">Architecture Hexagonale</h2>
+            <div class="arch-diagram">
+                <div class="arch-layer">
+                    <h4>🏗️ Domain Layer (Cœur Métier)</h4>
+                    <p>Entities, Value Objects, règles métier pures - Zero dépendances externes</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>🎯 Application Layer (Use Cases)</h4>
+                    <p>Services applicatifs, DTOs, coordination du domaine - Dépend uniquement du Domain</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>🔌 Infrastructure Layer (Adaptateurs)</h4>
+                    <p>Rails API, PostgreSQL, Repositories - Implémente les ports définis par le Domain</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Status Section -->
+    <section id="status" class="status">
+        <div class="container">
+            <h2 class="section-title">État du Projet</h2>
+            <div class="status-grid">
+                <div class="status-item success">
+                    <div class="status-icon">✅</div>
+                    <h3>Architecture</h3>
+                    <p>Conception DDD complète avec 3 Bounded Contexts</p>
+                </div>
+                <div class="status-item success">
+                    <div class="status-icon">✅</div>
+                    <h3>Domain Models</h3>
+                    <p>Entités et Value Objects implémentés</p>
+                </div>
+                <div class="status-item success">
+                    <div class="status-icon">✅</div>
+                    <h3>Infrastructure</h3>
+                    <p>Rails API + PostgreSQL configurés</p>
+                </div>
+                <div class="status-item warning">
+                    <div class="status-icon">🔄</div>
+                    <h3>API Endpoints</h3>
+                    <p>En cours de finalisation</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 BrokerX+. Projet académique LOG430 - Architecture Logicielle Avancée.</p>
+            <p>Architecture Hexagonale • Domain-Driven Design • Clean Architecture</p>
+        </div>
+    </footer>
+
+    <script>
+                // --- Login modal logic ---
+                const loginBtn = document.getElementById('loginBtn');
+                // Create modal HTML
+                const loginModalHtml = `
+                <div id="loginModal" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:2000;">
+                    <div style="background:#fff;padding:24px;border-radius:8px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                        <h2 style="margin-bottom:8px;color:#2d3748">Se connecter</h2>
+                        <p style="margin:0 0 12px 0;color:#4a5568;font-size:0.95rem">Entrez vos identifiants pour vous connecter.</p>
+                        <form id="loginForm">
+                            <div style="margin-bottom:8px;"><input id="loginEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                            <div style="margin-bottom:12px;"><input id="loginPassword" type="password" placeholder="Mot de passe" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                <button type="button" id="cancelLogin" style="background:#edf2ff;color:#4a5568;padding:10px 14px;border-radius:8px;border:none;">Annuler</button>
+                                <button type="submit" style="background:#667eea;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Se connecter</button>
+                            </div>
+                            <p id="loginFeedback" style="margin-top:10px;color:#e53e3e;display:none"></p>
+                        </form>
+                    </div>
+                </div>
+                `;
+
+                function openLoginModal() {
+                    if (document.getElementById('loginModal')) return;
+                    document.body.insertAdjacentHTML('beforeend', loginModalHtml);
+                    const cancel = document.getElementById('cancelLogin');
+                    const form = document.getElementById('loginForm');
+                    const feedback = document.getElementById('loginFeedback');
+
+                    cancel.addEventListener('click', closeLoginModal);
+
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        feedback.style.display = 'none';
+                        const email = document.getElementById('loginEmail').value;
+                        const password = document.getElementById('loginPassword').value;
+                        try {
+                            const res = await fetch('/api/v1/auth/login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                body: JSON.stringify({ email, password })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                                feedback.textContent = data.error || data.message || 'Erreur de connexion';
+                                feedback.style.display = 'block';
+                                return;
+                            }
+                            // success — server may ask for MFA
+                            if (data.mfa_required) {
+                                // ask for code
+                                const code = prompt('Un code a été envoyé par e-mail. Entrez le code MFA :');
+                                if (!code) {
+                                    feedback.textContent = 'MFA requis';
+                                    feedback.style.display = 'block';
+                                    return;
+                                }
+                                // verify MFA
+                                const verifyRes = await fetch('/api/v1/auth/verify_mfa', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                    body: JSON.stringify({ email, code })
+                                });
+                                const verifyData = await verifyRes.json();
+                                if (!verifyRes.ok) {
+                                    feedback.textContent = verifyData.error || 'MFA invalide';
+                                    feedback.style.display = 'block';
+                                    return;
+                                }
+                                                                
+                                                                feedback.style.color = '#2f855a';
+                                                                feedback.textContent = 'Connecté ✓';
+                                                                feedback.style.display = 'block';
+                                                                if (verifyData.token) {
+                                                                    localStorage.setItem('auth_token', verifyData.token);
+                                                                    
+                                                                    window.location.href = '/orders';
+                                                                    return;
+                                                                }
+                                                                setTimeout(closeLoginModal, 800);
+                                return;
+                            }
+                                                        
+                                                        feedback.style.color = '#2f855a';
+                                                        feedback.textContent = 'Connecté ✓';
+                                                        feedback.style.display = 'block';
+                                                        if (data.token) {
+                                                            localStorage.setItem('auth_token', data.token);
+                                                            window.location.href = '/orders';
+                                                            return;
+                                                        }
+                                                        setTimeout(closeLoginModal, 800);
+                        } catch (err) {
+                            feedback.textContent = 'Impossible de contacter le serveur';
+                            feedback.style.display = 'block';
+                        }
+                    });
+                }
+
+                function closeLoginModal() {
+                    const node = document.getElementById('loginModal');
+                    if (node) node.remove();
+                }
+
+                loginBtn && loginBtn.addEventListener('click', (e) => { e.preventDefault(); openLoginModal(); });
+                const createBtn = document.getElementById('createBtn');
+
+                const createModalHtml = `
+                <div id="createModal" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:2000;">
+                    <div style="background:#fff;padding:24px;border-radius:8px;max-width:520px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                        <h2 style="margin-bottom:8px;color:#2d3748">Créer un compte</h2>
+                        <p style="margin:0 0 12px 0;color:#4a5568;font-size:0.95rem">Remplissez le formulaire pour créer un compte client.</p>
+                        <form id="createForm">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                                <input id="firstName" placeholder="Prénom" required style="padding:10px;border:1px solid #e2e8f0;border-radius:6px;" />
+                                <input id="lastName" placeholder="Nom" required style="padding:10px;border:1px solid #e2e8f0;border-radius:6px;" />
+                            </div>
+                            <div style="margin-bottom:8px;"><input id="regEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                            <div style="margin-bottom:8px;"><input id="dob" type="date" placeholder="Date de naissance" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                            <div style="margin-bottom:12px;"><input id="regPassword" type="password" placeholder="Mot de passe" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                <button type="button" id="cancelCreate" style="background:#edf2ff;color:#4a5568;padding:10px 14px;border-radius:8px;border:none;">Annuler</button>
+                                <button type="submit" style="background:#48bb78;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Créer</button>
+                            </div>
+                            <p id="createFeedback" style="margin-top:10px;color:#e53e3e;display:none"></p>
+                        </form>
+                    </div>
+                </div>
+                `;
+
+                function openCreateModal() {
+                    if (document.getElementById('createModal')) return;
+                    document.body.insertAdjacentHTML('beforeend', createModalHtml);
+                    const cancel = document.getElementById('cancelCreate');
+                    const form = document.getElementById('createForm');
+                    const feedback = document.getElementById('createFeedback');
+
+                    cancel.addEventListener('click', () => { const n = document.getElementById('createModal'); if (n) n.remove(); });
+
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        feedback.style.display = 'none';
+                        const payload = {
+                            client: {
+                                email: document.getElementById('regEmail').value,
+                                first_name: document.getElementById('firstName').value,
+                                last_name: document.getElementById('lastName').value,
+                                date_of_birth: document.getElementById('dob').value,
+                                password: document.getElementById('regPassword').value
+                            }
+                        };
+
+                        try {
+                            const res = await fetch('/api/v1/clients/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            const data = await res.json();
+                                    if (!res.ok) {
+                                        feedback.textContent = data.error || (data.errors && JSON.stringify(data.errors)) || 'Erreur lors de la création';
+                                        feedback.style.display = 'block';
+                                        return;
+                                    }
+                                    feedback.style.color = '#2f855a';
+                                    feedback.textContent = 'Compte créé. Un code de vérification a été envoyé à votre email.';
+                                    feedback.style.display = 'block';
+
+                                    // prompt for verification token to activate immediately (or user can check email)
+                                    const token = prompt('Entrez le code de vérification envoyé par e-mail pour activer votre compte :');
+                                    if (token) {
+                                        try {
+                                            const verifyRes = await fetch(`/api/v1/clients/verify?token=${encodeURIComponent(token)}`);
+                                            const verifyData = await verifyRes.json();
+                                            if (!verifyRes.ok) {
+                                                alert('Vérification échouée: ' + (verifyData.error || 'error'));
+                                            } else {
+                                                alert('Compte activé. Vous pouvez maintenant vous connecter.');
+                                                const n = document.getElementById('createModal'); if (n) n.remove();
+                                            }
+                                        } catch (err) {
+                                            alert('Impossible de contacter le serveur pour vérification');
+                                        }
+                                    } else {
+                                        // close after short delay
+                                        setTimeout(() => { const n = document.getElementById('createModal'); if (n) n.remove(); }, 1200);
+                                    }
+                        } catch (err) {
+                            feedback.textContent = 'Impossible de contacter le serveur';
+                            feedback.style.display = 'block';
+                        }
+                    });
+                }
+
+                createBtn && createBtn.addEventListener('click', (e) => { e.preventDefault(); openCreateModal(); });
+
+        // Smooth scrolling pour les ancres
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Animation simple au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observer les éléments à animer
+        document.querySelectorAll('.feature-card, .arch-layer, .status-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>

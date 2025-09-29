@@ -1,0 +1,43 @@
+@startuml
+package "domain.clients" {
+    class Client <<Entity>> {
+        - id: ClientId
+        - email: Email
+        - status: AccountStatus
+        + register(): void
+        + activate(): void
+    }
+
+
+    class Account <<Entity>> {
+    - id: AccountId
+    - clientId: ClientId
+    - status: AccountStatus
+    + activate(): void
+    + suspend(): void
+}
+
+class Portfolio <<Entity>> {
+    - id: PortfolioId
+    - accountId: AccountId
+    - balance: Money
+    + credit(amount: Money): void
+    + debit(amount: Money): void
+}
+
+class Email <<ValueObject>> {
+    - value: string
+    + valid?: boolean
+}
+
+class Money <<ValueObject>> {
+    - amount: decimal
+    - currency: string
+    + add(other: Money): Money
+    + subtract(other: Money): Money
+}
+
+    Client --> Account : has one
+    Account --> Portfolio : has one
+}
+@enduml

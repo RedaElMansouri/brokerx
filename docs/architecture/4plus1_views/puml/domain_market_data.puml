@@ -1,0 +1,25 @@
+@startuml
+package "domain.market_data" {
+  class Instrument <<Entity>> {
+    - symbol: Symbol
+    - name: string
+    - status: InstrumentStatus
+    - tradingHours: TradingHours
+  }
+  
+  class Quote <<ValueObject>> {
+    - symbol: Symbol
+    - bid: Price
+    - ask: Price
+    - last: Price
+    - timestamp: DateTime
+  }
+  
+  class MarketDataStream <<Service>> {
+    + subscribe(symbols: List<Symbol>): Stream<Quote>
+    + unsubscribe(symbol: Symbol): void
+  }
+  
+  Instrument --> Quote : has current
+}
+@enduml

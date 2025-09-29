@@ -1,0 +1,22 @@
+@startuml
+package "Infrastructure" as infra {
+    [Web Controllers]
+    [ActiveRecord Models]
+    [External Clients]
+}
+
+package "Application" as app {
+    [Use Cases]
+    [DTOs]
+}
+
+package "Domain" as domain {
+    [Entities]
+    [Value Objects]
+    [Domain Services]
+}
+
+infra --> app : depends on
+app --> domain : depends on
+
+' Aucune flèche dans l'autre sens!

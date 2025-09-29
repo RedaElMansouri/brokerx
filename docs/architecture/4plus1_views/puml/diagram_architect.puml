@@ -1,0 +1,34 @@
+@startuml
+node "Load Balancer" as lb {
+  [HAProxy]
+}
+
+node "Application Server" as app {
+  [Rails Puma] as rails
+  [Sidekiq] as sidekiq
+  database "Redis" as redis
+}
+
+node "Database Server" as db {
+  database "PostgreSQL" as postgres
+}
+
+node "Client Web" as client {
+  [Browser] as browser
+  [Mobile App] as mobile
+}
+
+client --> lb : HTTPS (443)
+lb --> rails : HTTP (3000)
+rails --> postgres : JDBC (5432)
+rails --> redis : Redis (6379)
+
+cloud "External Services" as external {
+  [SMTP Server] as smtp
+  [Market Data Feed] as market
+}
+
+rails --> smtp : SMTP (587)
+rails --> market : WebSocket (443)
+
+@enduml

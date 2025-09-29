@@ -1,0 +1,46 @@
+@startuml
+package "domain.trading" {
+  class Order <<Entity>> {
+    - id: OrderId
+    - symbol: Symbol
+    - type: OrderType
+    - direction: OrderDirection
+    - quantity: Quantity
+    - price: Price
+    - status: OrderStatus
+    + place(): void
+    + cancel(): void
+    + execute(quantity: Quantity): void
+  }
+  
+  class OrderBook <<Aggregate>> {
+    - symbol: Symbol
+    - buyOrders: List<Order>
+    - sellOrders: List<Order>
+    + addOrder(order: Order): void
+    + match(): List<Trade>
+  }
+  
+  class Trade <<Entity>> {
+    - id: TradeId
+    - buyOrderId: OrderId
+    - sellOrderId: OrderId
+    - quantity: Quantity
+    - price: Price
+  }
+  
+  class Symbol <<ValueObject>> {
+    - value: string
+    + valid?: boolean
+  }
+  
+  class Price <<ValueObject>> {
+    - value: decimal
+    - currency: string
+    + validateBands(): boolean
+  }
+  
+  OrderBook --> Order : contains
+  Trade --> Order : references
+}
+@enduml

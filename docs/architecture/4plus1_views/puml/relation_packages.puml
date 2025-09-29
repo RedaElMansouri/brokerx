@@ -1,0 +1,21 @@
+@startuml
+package "domain.clients" as clients {
+  [Client]
+  [Portfolio]
+}
+
+package "domain.trading" as trading {
+  [Order]
+  [OrderBook]
+}
+
+package "domain.market_data" as market {
+  [Instrument]
+  [Quote]
+}
+
+clients --> trading : Portfolio validates orders
+trading --> market : Order references Instrument
+market --> trading : Quote used for validation
+
+@enduml

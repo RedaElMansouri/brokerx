@@ -1,0 +1,81 @@
+<div class="container" style="padding-top:80px;">
+  <section class="feature-card" style="max-width:720px;margin:0 auto;">
+    <h1>Passer un ordre</h1>
+
+    <form id="orderForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <label>Symbole:<br/><input id="symbol" required value="AAPL" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;"/></label>
+        <label>Type:<br/>
+          <select id="order_type" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+            <option value="market">market</option>
+            <option value="limit">limit</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <label>Direction:<br/>
+          <select id="direction" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+            <option value="buy">buy</option>
+            <option value="sell">sell</option>
+          </select>
+        </label>
+        <label>Quantité:<br/><input id="quantity" type="number" value="1" min="1" required style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;"/></label>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label>Prix (pour limite):<br/><input id="price" type="number" step="0.01" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;"/></label>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button type="submit" class="cta-button">Envoyer l'ordre</button>
+        <button id="logoutBtn" type="button" style="background:#e53e3e;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Déconnexion</button>
+        <span id="orderFeedback" style="color:#e53e3e"></span>
+      </div>
+    </form>
+  </section>
+
+  <script>
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = localStorage.getItem('auth_token');
+      if (!token) { alert('Vous devez être connecté'); return; }
+      const payload = {
+        symbol: document.getElementById('symbol').value,
+        order_type: document.getElementById('order_type').value,
+        direction: document.getElementById('direction').value,
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value || null
+      };
+      const feedback = document.getElementById('orderFeedback');
+      feedback.textContent = '';
+      try {
+        const res = await fetch('/api/v1/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          feedback.style.color = '#e53e3e';
+          feedback.textContent = data.error || (data.errors && JSON.stringify(data.errors)) || 'Erreur';
+        } else {
+          feedback.style.color = '#2f855a';
+          feedback.textContent = data.message || 'Ordre accepté';
+        }
+      } catch (err) {
+        feedback.style.color = '#e53e3e';
+        feedback.textContent = 'Impossible de contacter le serveur';
+      }
+    });
+    // Logout handler
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('auth_token');
+        window.location.href = '/';
+      });
+    }
+  </script>
+</div>

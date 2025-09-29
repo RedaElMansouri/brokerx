@@ -1,0 +1,22 @@
+# config/database.yml
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: localhost
+  port: 5432
+  username: brokerx
+  password: brokerxpass
+
+development:
+  <<: *default
+  database: brokerx_development
+
+test:
+  <<: *default
+  database: brokerx_test
+
+production:
+  <<: *default
+  database: brokerx_production
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>

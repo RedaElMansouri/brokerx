@@ -1,0 +1,17 @@
+@startuml
+component "Order Matching Engine" as engine {
+  component "OrderBook Manager" as obm
+  component "Trade Executor" as executor
+}
+
+component "Market Data Feed" as market
+database "Orders Database" as orders
+database "Trades Database" as trades
+
+market --> obm: Real-time quotes
+obm --> obm: Check for matches
+obm --> executor: execute_trade(buy_order, sell_order)
+executor --> orders: Lock & Update orders
+executor --> trades: Insert trade record
+note right of executor: Notify parties
+@enduml

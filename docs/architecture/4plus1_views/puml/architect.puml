@@ -1,0 +1,15 @@
+@startuml
+component "Order Service" as orders
+component "Portfolio Service" as portfolio
+component "Matching Engine" as matching
+database "Event Store" as events
+
+orders -> events: OrderPlacedEvent
+portfolio -> events: FundsReservedEvent
+matching -> events: subscribe(OrderPlacedEvent)
+
+events -> matching: OrderPlacedEvent
+matching -> events: TradeExecutedEvent
+portfolio -> events: subscribe(TradeExecutedEvent)
+
+@enduml

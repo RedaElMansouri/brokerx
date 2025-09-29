@@ -1,0 +1,17 @@
+/* Fallback stylesheet served from public to support running without Sprockets in dev */
+/* The main visual styles are in app/assets/stylesheets/application.css; copy here for dev server fallback */
+
+* { box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #333; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.header { background: rgba(255,255,255,0.95); box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: fixed; width: 100%; top: 0; z-index: 1000; }
+.nav { display:flex; justify-content: space-between; align-items:center; padding:1rem 0; }
+.logo { font-size: 1.8rem; font-weight: 700; color:#4a5568; }
+.logo span { color: #667eea; }
+.nav-links { display:flex; list-style: none; gap: 1rem; }
+.nav-links a { text-decoration:none; color: #4a5568; }
+.hero { padding: 140px 0 100px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.cta-button { display:inline-block; background:#fff; color:#667eea; padding:12px 24px; border-radius:50px; text-decoration:none; font-weight:700; }
+.features { padding: 100px 0; background: #f8f9fa; }
+.feature-card { background:white; padding: 2rem; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); text-align:center; }
+.footer { background:#2d3748; color:white; padding:3rem 0; text-align:center; }

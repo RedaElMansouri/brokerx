@@ -1,0 +1,48 @@
+@startuml context_diagram
+!define RECTANGLE class
+skinparam backgroundcolor transparent
+skinparam shadowing false
+skinparam class {
+    BackgroundColor White
+    BorderColor Black
+    ArrowColor Black
+}
+
+title Diagramme de Contexte - BrokerX+ (Domain-Driven Design)
+
+actor "Client" as client <<Person>>
+actor "Back-Office" as backoffice <<Person>>
+actor "Fournisseur Données Marché" as marketdata <<System>>
+
+package "Système BrokerX+" {
+    [Client & Comptes] as accounts
+    [Ordres & Trading] as trading
+    [Marché & Données] as market
+}
+
+' Interactions Client
+client --> accounts : "1. S'inscrire\n2. Se connecter (MFA)\n3. Créditer portefeuille"
+client --> trading : "4. Passer ordre (marché/limite)\n5. Modifier/annuler ordre\n6. Consulter positions"
+client --> market : "7. S'abonner données marché\n8. Recevoir cotations temps réel"
+
+' Interactions Back-Office
+backoffice --> accounts : "Superviser comptes\nValider identités (KYC)"
+backoffice --> trading : "Surveiller transactions\nAuditer les opérations"
+
+' Interactions externes
+marketdata --> market : "Alimenter données marché\n(Cotations, Order Books)"
+trading --> market : "Obtenir prix courants\nVérifier règles trading"
+
+' Relations entre contexts
+accounts --> trading : "Vérifier solde client\n avant ordre"
+trading --> accounts : "Notifier exécutions\n(mise à jour portefeuille)"
+market --> accounts : "Diffuser données\naux clients abonnés"
+
+note right of client
+  **Scénario typique:**
+    1. Inscription → 2. Connexion
+    3. Dépôt → 4. Placement ordre
+    5. Réception exécution
+end note
+
+@enduml
