@@ -5,12 +5,11 @@
   <div class="container">
     <nav class="nav">
       <div class="logo">Broker<span>X+</span></div>
-      <ul class="nav-links">
-        <li><a href="#features">Fonctionnalités</a></li>
-        <li><a href="#architecture">Architecture</a></li>
-        <li><a href="#status">État</a></li>
-    <li><a href="https://github.com/RedaElMansouri/brokerx" target="_blank">GitHub</a></li>
-      </ul>
+            <ul class="nav-links">
+                <li><a href="#features">Fonctionnalités</a></li>
+                <li><a href="#how">Comment ça marche</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
       <div style="display:flex; gap:12px; align-items:center;">
         <a id="createBtn" class="cta-button" href="#" style="background:#48bb78;color:#fff">Créer un compte</a>
         <a id="loginBtn" class="cta-button" href="#">Se connecter</a>
@@ -22,31 +21,75 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h1>Plateforme de Courtage Moderne</h1>
-            <p>Architecture Hexagonale • Domain-Driven Design • Microservices Ready</p>
-            <a href="#features" class="cta-button">Découvrir l'Architecture</a>
+            <h1>Investissez en toute simplicité</h1>
+            <p>Créez un compte, créditez votre portefeuille, et passez vos ordres d’achat/vente.</p>
+            <a href="#how" class="cta-button">Voir comment ça marche</a>
         </div>
     </section>
 
     <!-- Features Section -->
     <section id="features" class="features">
         <div class="container">
-            <h2 class="section-title">Fonctionnalités Principales</h2>
+            <h2 class="section-title">Ce que vous pouvez faire</h2>
             <div class="features-grid">
                 <div class="feature-card">
+                    <div class="feature-icon">🧑‍💼</div>
+                    <h3>Créer un compte</h3>
+                    <p>Inscrivez-vous en quelques clics. Pour sécuriser l’accès, un code MFA (double vérification) vous est envoyé.</p>
+                </div>
+                <div class="feature-card">
                     <div class="feature-icon">🏦</div>
-                    <h3>Gestion des Clients</h3>
-                    <p>Inscription sécurisée, vérification d'identité, et gestion des portefeuilles virtuels</p>
+                    <h3>Approvisionner votre portefeuille</h3>
+                    <p>Effectuez un dépôt virtuel pour disposer de liquidités et pouvoir passer des ordres d’achat.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💱</div>
-                    <h3>Trading en Temps Réel</h3>
-                    <p>Ordres marché/limite avec contrôles pré-trade et appariement interne</p>
+                    <div class="feature-icon">�</div>
+                    <h3>Passer des ordres</h3>
+                    <p>Choisissez un symbole, le type d’ordre (marché/limite), la quantité et validez votre transaction.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Données de Marché</h3>
-                    <p>Flux temps réel, cotations, et carnets d'ordres pour prise de décision</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how" class="architecture">
+        <div class="container">
+            <h2 class="section-title">Comment ça marche</h2>
+            <div class="arch-diagram">
+                <div class="arch-layer">
+                    <h4>1. Inscription et connexion</h4>
+                    <p>Créez votre compte puis connectez-vous. Pour confirmer votre identité, nous vous envoyons un code MFA par e‑mail. Entrez ce code pour accéder à votre espace.</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>2. Dépôt de fonds (virtuel)</h4>
+                    <p>Rendez-vous dans « Mon portefeuille » et effectuez un dépôt. Le montant est immédiatement ajouté à votre solde disponible.</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>3. Passer un ordre</h4>
+                    <p>Sur la page « Passer un ordre », indiquez le symbole (ex. AAPL), le type d’ordre (marché ou limite), la quantité et, si besoin, le prix. Confirmez pour envoyer.</p>
+                </div>
+                <div class="arch-layer">
+                    <h4>4. Suivre votre portefeuille</h4>
+                    <p>Consultez à tout moment votre solde disponible, la part réservée pour vos ordres en cours et l’historique de vos dépôts.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="status">
+        <div class="container">
+            <h2 class="section-title">Questions fréquentes</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <h3>Pourquoi la double vérification (MFA) ?</h3>
+                    <p>Elle sécurise l’accès à votre compte en demandant un code unique envoyé par e‑mail lors de la connexion.</p>
+                </div>
+                <div class="status-item">
+                    <h3>Mon dépôt est‑il réel ?</h3>
+                    <p>Non, il est virtuel et sert à simuler des opérations en toute sécurité.</p>
+                </div>
+                <div class="status-item">
+                    <h3>Puis‑je annuler un ordre ?</h3>
+                    <p>Oui, tant qu’il n’est pas déjà exécuté. Les fonds réservés sont alors remis à disposition.</p>
                 </div>
             </div>
         </div>

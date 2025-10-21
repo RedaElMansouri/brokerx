@@ -3,6 +3,7 @@ module Infrastructure
     module ActiveRecord
       class ClientRecord < ::ApplicationRecord
         self.table_name = 'clients'
+  has_secure_password validations: false
 
         validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
         validates :first_name, :last_name, :date_of_birth, presence: true

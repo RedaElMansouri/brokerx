@@ -16,7 +16,7 @@ module Infrastructure
 
         def save(portfolio_entity)
           ::ActiveRecord::Base.transaction do
-            record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.find_or_initialize_by(id: portfolio_entity.id)
+            record = build_or_find_record(portfolio_entity)
             record.assign_attributes(map_to_record(portfolio_entity))
 
             if record.save
@@ -65,6 +65,15 @@ module Infrastructure
         end
 
         private
+        def build_or_find_record(entity)
+          id = entity.id
+          if id.is_a?(Integer) || (id.is_a?(String) && id =~ /\A\d+\z/)
+            Infrastructure::Persistence::ActiveRecord::PortfolioRecord.find_or_initialize_by(id: id)
+          else
+            # Use natural key on create
+            Infrastructure::Persistence::ActiveRecord::PortfolioRecord.find_or_initialize_by(account_id: entity.account_id)
+          end
+        end
 
         def map_to_entity(record)
           Domain::Clients::Entities::Portfolio.new(

@@ -12,6 +12,7 @@ gem 'puma', '~> 6.4'
 # API
 gem 'rack-cors'
 gem 'jwt'
+gem 'rack-attack'
 
 # Security
 gem 'bcrypt', '~> 3.1.7'

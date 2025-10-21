@@ -23,11 +23,11 @@ module Infrastructure
 
         def save(client_entity)
           ::ActiveRecord::Base.transaction do
-            record = Infrastructure::Persistence::ActiveRecord::ClientRecord.find_or_initialize_by(id: client_entity.id)
+            record = build_or_find_record(client_entity)
             record.assign_attributes(map_to_record(client_entity))
 
             if record.save
-              client_entity.id = record.id if client_entity.id.nil?
+              client_entity.id = record.id
               client_entity
             else
               raise Domain::Shared::Repository::Error, "Failed to save client: #{record.errors.full_messages}"
@@ -61,6 +61,15 @@ module Infrastructure
             created_at: record.created_at,
             updated_at: record.updated_at
           )
+        end
+
+        def build_or_find_record(entity)
+          id = entity.id
+          if id.is_a?(Integer) || (id.is_a?(String) && id =~ /\A\d+\z/)
+            Infrastructure::Persistence::ActiveRecord::ClientRecord.find_or_initialize_by(id: id)
+          else
+            Infrastructure::Persistence::ActiveRecord::ClientRecord.new
+          end
         end
 
         def map_to_record(entity)

@@ -1,6 +1,5 @@
-module Application
-  module Dtos
-    class PlaceOrderDto
+module Dtos
+  class PlaceOrderDto
       attr_reader :account_id, :symbol, :order_type, :direction, :quantity, :price, :time_in_force
 
       def initialize(account_id:, symbol:, order_type:, direction:, quantity:, price: nil, time_in_force: 'DAY')
@@ -24,6 +23,5 @@ module Application
           time_in_force: time_in_force
         }
       end
-    end
   end
 end

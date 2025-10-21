@@ -12,12 +12,18 @@ Rails.application.routes.draw do
       get 'clients/verify', to: 'clients#verify'
       post 'auth/login', to: 'authentication#login'
   post 'auth/verify_mfa', to: 'authentication#verify_mfa'
+      post 'deposits', to: 'deposits#create'
+      get  'deposits', to: 'deposits#index'
+    get 'portfolio', to: 'portfolios#show'
       post 'orders', to: 'orders#create'
+      get  'orders/:id', to: 'orders#show'
+      delete 'orders/:id', to: 'orders#destroy'
     end
   end
 
   # Orders UI page
   get '/orders', to: 'orders#index'
+  get '/portfolio', to: 'portfolios#show'
 
   match '*path', to: 'application#route_not_found', via: :all
 end

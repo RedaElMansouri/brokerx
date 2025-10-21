@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_28_193010) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_20_213000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -27,10 +27,49 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_28_193010) do
     t.datetime "updated_at", null: false
     t.string "mfa_code"
     t.datetime "mfa_sent_at"
+    t.string "password_digest"
+    t.integer "mfa_attempts", default: 0, null: false
+    t.datetime "last_mfa_attempt_at"
     t.index ["email"], name: "index_clients_on_email", unique: true
     t.index ["mfa_code"], name: "index_clients_on_mfa_code"
+    t.index ["password_digest"], name: "index_clients_on_password_digest"
     t.index ["status"], name: "index_clients_on_status"
     t.index ["verification_token"], name: "index_clients_on_verification_token"
+  end
+
+  create_table "orders", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "symbol", null: false
+    t.string "order_type", null: false
+    t.string "direction", null: false
+    t.integer "quantity", null: false
+    t.decimal "price", precision: 15, scale: 4
+    t.string "time_in_force", default: "DAY", null: false
+    t.string "status", default: "new", null: false
+    t.decimal "reserved_amount", precision: 15, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_orders_on_account_id"
+    t.index ["status"], name: "index_orders_on_status"
+    t.index ["symbol"], name: "index_orders_on_symbol"
+  end
+
+  create_table "portfolio_transactions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "operation_type", default: "deposit", null: false
+    t.decimal "amount", precision: 15, scale: 2, null: false
+    t.string "currency", null: false
+    t.string "status", default: "pending", null: false
+    t.string "idempotency_key"
+    t.string "external_reference"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "settled_at"
+    t.text "failure_reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "idempotency_key"], name: "index_portfolio_transactions_on_account_id_and_idempotency_key", unique: true, where: "(idempotency_key IS NOT NULL)"
+    t.index ["account_id"], name: "index_portfolio_transactions_on_account_id"
+    t.index ["status"], name: "index_portfolio_transactions_on_status"
   end
 
   create_table "portfolios", force: :cascade do |t|
@@ -42,6 +81,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_28_193010) do
     t.bigint "account_id", null: false
     t.index ["account_id"], name: "index_portfolios_on_account_id", unique: true
     t.index ["currency"], name: "index_portfolios_on_currency"
+  end
+
+  create_table "trades", force: :cascade do |t|
+    t.bigint "order_id", null: false
+    t.bigint "account_id", null: false
+    t.string "symbol", null: false
+    t.integer "quantity", null: false
+    t.decimal "price", precision: 15, scale: 4, default: "0.0", null: false
+    t.string "side", null: false
+    t.string "status", default: "executed", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_trades_on_account_id"
+    t.index ["order_id"], name: "index_trades_on_order_id"
+    t.index ["symbol"], name: "index_trades_on_symbol"
   end
 
 end

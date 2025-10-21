@@ -1,0 +1,34 @@
+= BrokerX Environment and Configuration (RDoc)
+
+This document lists key environment variables and operational defaults introduced or used in P0.
+
+== Environment Variables
+
+- SECRET_KEY_BASE:: Rails secret used for JWT signing (HS256). Required.
+- JWT_ISSUER:: Expected JWT issuer claim. Default: +brokerx+.
+- JWT_AUDIENCE:: Expected JWT audience claim. Default: +brokerx.web+.
+- CORS_ALLOWED_ORIGINS:: Comma-separated list of allowed origins (e.g., +http://localhost:3000,http://127.0.0.1:3000+).
+- RACK_ATTACK_ENABLED:: Enable Rack::Attack throttling. Default: +true+ in production.
+- RATE_LIMIT_AUTH_REQS_PER_MIN:: Per-IP limit for auth endpoints. Reasonable default applied in initializer.
+- DATABASE_URL:: Optional; full connection string for PostgreSQL.
+- RAILS_LOG_LEVEL:: Logging level (e.g., +info+, +debug+). Default: +info+.
+
+== Security Defaults
+
+- JWT tokens are short-lived; verify +alg+, +iss+, +aud+, and +exp+.
+- Passwords stored via bcrypt (+has_secure_password+). Minimum length enforced at application layer.
+- MFA attempts are throttled; timestamps tracked per user.
+- CORS is restricted to known origins; only minimal HTTP methods are allowed.
+- Sensitive parameters are filtered from logs (+filter_parameter_logging.rb+).
+
+== Operational Notes
+
+- Namespaces: top-level +Domain+ and +Infrastructure+; application layer under +Dtos+, +UseCases+, +Services+.
+- Persistence models live exclusively under +app/infrastructure/persistence/active_record+.
+- Avoid adding duplicate model classes under +app/models+ to prevent autoload conflicts.
+
+== Troubleshooting
+
+- If you see "superclass mismatch" for model classes, check for duplicate class definitions in +app/models+.
+- If JWT verification fails, verify +SECRET_KEY_BASE+, +JWT_ISSUER+, +JWT_AUDIENCE+ and token expiration.
+- For CORS errors, confirm +CORS_ALLOWED_ORIGINS+ and ensure your frontend origin matches exactly.

@@ -1,3 +1,21 @@
+# Docker context exclusions
+.git
+.github
+.gitignore
+log
+node_modules
+tmp
+vendor/bundle
+.bundle
+coverage
+spec
+rdoc
+docs
+storage
+**/*.swp
+**/*.swo
+**/*.tmp
+**/*~
 # .dockerignore
 .git
 .gitignore

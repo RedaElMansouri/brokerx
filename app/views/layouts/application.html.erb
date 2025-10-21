@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BrokerX+</title>
-    <%= stylesheet_link_tag 'application', media: 'all' %>
-    <%= javascript_include_tag 'application' if Rails.application.config.respond_to?(:assets) %>
+  <title>BrokerX+</title>
+  <%= stylesheet_link_tag "/stylesheets/application.css?v=#{File.mtime(Rails.root.join('public','stylesheets','application.css')).to_i}", media: 'all' %>
+  <%= javascript_include_tag 'application' if Rails.application.config.respond_to?(:assets) %>
   </head>
   <body>
     <%= yield %>

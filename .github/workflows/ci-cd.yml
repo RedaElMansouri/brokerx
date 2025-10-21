@@ -1,0 +1,102 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-compose:
+    name: Deploy via docker-compose (optional)
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Install SSH client
+        run: sudo apt-get update -y && sudo apt-get install -y openssh-client
+
+      - name: Add SSH key
+        if: secrets.SSH_PRIVATE_KEY != ''
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+      - name: Render docker-compose file remotely
+        if: secrets.SSH_PRIVATE_KEY != ''
+        env:
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        run: |
+          ssh ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p ~/apps/brokerx && cat > ~/apps/brokerx/docker-compose.yml <<'YML'\nversion: '3.8'\nservices:\n  postgres:\n    image: postgres:15-alpine\n    environment:\n      POSTGRES_DB: brokerx_production\n      POSTGRES_USER: brokerx\n      POSTGRES_PASSWORD: password\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    healthcheck:\n      test: ['CMD-SHELL', 'pg_isready -U brokerx -d brokerx_production']\n      interval: 10s\n      timeout: 5s\n      retries: 5\n  web:\n    image: ${IMAGE}\n    environment:\n      RAILS_ENV: production\n      DATABASE_HOST: postgres\n      DATABASE_USERNAME: brokerx\n      DATABASE_PASSWORD: password\n      POSTGRES_DB: brokerx_production\n      RAILS_LOG_TO_STDOUT: '1'\n      RAILS_SERVE_STATIC_FILES: 'true'\n      SECRET_KEY_BASE: \"${SECRET_KEY_BASE}\"\n    ports:\n      - '80:3000'\n    depends_on:\n      postgres:\n        condition: service_healthy\n    command: bash -lc \"bundle exec rails db:migrate && bundle exec rails server -b 0.0.0.0 -p 3000\"\nvolumes:\n  postgres_data:\nYML"
+
+      - name: Deploy (compose up -d)
+        if: secrets.SSH_PRIVATE_KEY != ''
+        env:
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+        run: |
+          ssh ${REMOTE_USER}@${REMOTE_HOST} "cd ~/apps/brokerx && SECRET_KEY_BASE='${SECRET_KEY_BASE}' docker compose pull && SECRET_KEY_BASE='${SECRET_KEY_BASE}' docker compose up -d"

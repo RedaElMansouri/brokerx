@@ -1,6 +1,5 @@
-module Application
-  module UseCases
-    class RegisterClientUseCase
+module UseCases
+  class RegisterClientUseCase
       def initialize(client_repository, portfolio_repository)
         @client_repository = client_repository
         @portfolio_repository = portfolio_repository
@@ -22,6 +21,14 @@ module Application
 
         # Sauvegarder le client
         saved_client = @client_repository.save(client)
+
+        # Définir le mot de passe si fourni (via ActiveRecord, pour has_secure_password)
+        if dto.password && !dto.password.to_s.strip.empty?
+          ar = ::Infrastructure::Persistence::ActiveRecord::ClientRecord.find(saved_client.id)
+          ar.password = dto.password
+          ar.save!
+        end
+
 
         # Créer un portfolio pour le client
         portfolio = Domain::Clients::Entities::Portfolio.new(
@@ -47,6 +54,5 @@ module Application
       def generate_verification_token
         SecureRandom.hex(20)
       end
-    end
   end
 end

@@ -1,0 +1,146 @@
+<div class="container" style="padding-top:80px;">
+  <header style="position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#0f172a;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.1);z-index:50;">
+    <div id="welcomeName" style="font-weight:600;">Mon portefeuille</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a href="/orders" style="color:#fff;text-decoration:none;">Passer un ordre</a>
+      <button id="headerLogoutBtn" type="button" style="background:#e53e3e;color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;">Déconnexion</button>
+    </div>
+  </header>
+
+  <section class="feature-card" style="max-width:720px;margin:0 auto;">
+    <h1>Solde du portefeuille</h1>
+    <div id="balances" style="margin-bottom:16px;">
+      <div>Devise: <span id="currency">-</span></div>
+      <div>Disponible: <span id="available">-</span></div>
+      <div>Réservé: <span id="reserved">-</span></div>
+      <div>Total: <span id="total">-</span></div>
+    </div>
+
+    <h2>Dépôt (virtuel)</h2>
+    <form id="depositForm" style="margin-bottom:12px;">
+      <label>Montant:<br><input id="amount" type="number" min="1" step="1" value="1000" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;"></label>
+      <div style="margin-top:8px;">
+        <button type="submit" class="cta-button">Déposer</button>
+        <span id="depositFeedback" style="margin-left:8px;"></span>
+      </div>
+    </form>
+
+    <h2>Derniers dépôts</h2>
+    <div id="recentDeposits" style="font-size:14px;color:#334155;">
+      <em>Chargement…</em>
+    </div>
+  </section>
+
+  <script>
+    function requireAuth() {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        alert('Vous devez vous connecter (MFA)');
+        window.location.href = '/';
+        return null;
+      }
+      return token;
+    }
+
+    (function() {
+      const token = requireAuth();
+      if (!token) return;
+      // welcome
+      try {
+        const raw = localStorage.getItem('auth_user');
+        if (raw) {
+          const user = JSON.parse(raw);
+          const name = `Portefeuille de ${user.full_name || [user.first_name, user.last_name].filter(Boolean).join(' ')}`.trim();
+          document.getElementById('welcomeName').textContent = name;
+        }
+      } catch {}
+
+      // load portfolio
+      fetch('/api/v1/portfolio', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token }
+      }).then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur');
+        document.getElementById('currency').textContent = data.currency;
+        document.getElementById('available').textContent = data.available_balance;
+        document.getElementById('reserved').textContent = data.reserved_balance;
+        document.getElementById('total').textContent = data.total_balance;
+      }).catch(err => {
+        alert('Impossible de charger le portefeuille: ' + err.message);
+      });
+
+      // load recent deposits
+      fetch('/api/v1/deposits', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token }
+      }).then(async res => {
+        const data = await res.json();
+        const container = document.getElementById('recentDeposits');
+        if (!res.ok) { container.textContent = data.error || 'Erreur'; return; }
+        if (!data.deposits || data.deposits.length === 0) { container.textContent = 'Aucun dépôt pour le moment.'; return; }
+        const list = document.createElement('ul');
+        list.style.paddingLeft = '18px';
+        data.deposits.forEach(d => {
+          const li = document.createElement('li');
+          li.textContent = `${d.amount} ${d.currency} — ${d.status}${d.settled_at ? ' @ ' + d.settled_at : ''}`;
+          list.appendChild(li);
+        });
+        container.innerHTML = '';
+        container.appendChild(list);
+      }).catch(() => {
+        const container = document.getElementById('recentDeposits');
+        container.textContent = 'Erreur de chargement.';
+      });
+    })();
+
+    // logout
+    (function() {
+      const btn = document.getElementById('headerLogoutBtn');
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          window.location.href = '/';
+        });
+      }
+    })();
+
+    // deposit
+    (function() {
+      const form = document.getElementById('depositForm');
+      const feedback = document.getElementById('depositFeedback');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = requireAuth();
+        if (!token) return;
+        feedback.textContent = '';
+        const amount = parseFloat(document.getElementById('amount').value);
+        const idempo = 'dep-' + Date.now();
+        try {
+          const res = await fetch('/api/v1/deposits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token, 'Idempotency-Key': idempo },
+            body: JSON.stringify({ amount: amount, currency: 'USD' })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Erreur');
+          feedback.style.color = '#2f855a';
+          feedback.textContent = 'Dépôt réussi';
+          // refresh balances
+          const r2 = await fetch('/api/v1/portfolio', { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token } });
+          const d2 = await r2.json();
+          if (r2.ok) {
+            document.getElementById('available').textContent = d2.available_balance;
+            document.getElementById('reserved').textContent = d2.reserved_balance;
+            document.getElementById('total').textContent = d2.total_balance;
+          }
+        } catch (err) {
+          feedback.style.color = '#e53e3e';
+          feedback.textContent = err.message;
+        }
+      });
+    })();
+  </script>
+</div>

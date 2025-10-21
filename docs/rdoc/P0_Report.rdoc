@@ -1,0 +1,67 @@
+= BrokerX P0 Summary (RDoc)
+
+This document summarizes the Phase 0 (P0) work completed to stabilize and harden the BrokerX API.
+
+== Highlights
+
+- Resolved 401 Unauthorized during login by fixing namespace/autoloading and credential verification.
+- Hardened authentication: bcrypt passwords, strict JWT claims (iss/aud/exp), and MFA throttling.
+- Fixed registration errors and schema mismatches; portfolio linkage by integer account_id with NOT NULL.
+- Removed fragile per-request loads; adopted robust Zeitwerk namespace mapping.
+- Tightened CORS and added rate limiting via Rack::Attack.
+
+== Autoloading and Namespaces
+
+- Introduced top-level modules: +Domain+ and +Infrastructure+.
+- Mapped autoloading paths for +app/domain+ and +app/infrastructure+ via an initializer.
+- Flattened application-layer namespaces to +Dtos+, +UseCases+, +Services+ under +app/application+.
+- Controllers and use cases reference top-level constants explicitly (e.g., +::UseCases+).
+
+== Authentication Hardening
+
+- Enabled +has_secure_password+ on client ActiveRecord model (bcrypt), with validations handled at use-case layer.
+- JWT generation verifies and includes:
+  - Algorithm: HS256
+  - iss: "brokerx"
+  - aud: "brokerx.web"
+  - iat/exp: short-lived tokens
+- JWT verification enforces algorithm, issuer, audience, and expiration.
+- MFA flow includes per-user throttling and attempt timestamping.
+
+== Persistence and Repositories
+
+- Repositories no longer force primary keys; let the database assign IDs.
+- Client save returns assigned ID to the domain entity.
+- Portfolios use natural key (+account_id+) to create or find the record.
+- Funds reservation/release performed under row locks; numeric safety checks.
+
+== Schema Changes (Migrations)
+
+- Added auth fields to +clients+: +password_digest+, +mfa_attempts+, +last_mfa_attempt_at+.
+- Converted +portfolios.account_id+ to +bigint+ and enforced NOT NULL; removed orphan rows.
+- Preserved unique constraint on +portfolios.account_id+.
+
+== CORS and Rate Limiting
+
+- CORS configured in +config/application.rb+ using env var +CORS_ALLOWED_ORIGINS+.
+- Allowed methods restricted to GET/POST/OPTIONS/HEAD; Authorization header exposed.
+- Added Rack::Attack throttles:
+  - General IP throttle.
+  - Stricter throttles for auth endpoints (/api/v1/auth/*).
+  - Health and static routes safelisted.
+
+== Cleanup
+
+- Removed duplicate ActiveRecord models under +app/models+ that shadowed Infrastructure models and caused superclass mismatch errors.
+- Consolidated to single source of truth under +app/infrastructure/persistence/active_record+.
+
+== How to Run (Dev)
+
+- Ensure PostgreSQL is running and +DATABASE_URL+ is configured if used.
+- Install gems; run migrations; start the server.
+- Use the orders UI page for a quick smoke test; or exercise API endpoints with a REST client.
+
+== Next Steps
+
+- Await P1 kickoff.
+- For P1, consider adding proper background job processing, improved matching engine, and full test coverage.

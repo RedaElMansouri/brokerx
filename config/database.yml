@@ -3,20 +3,20 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: localhost
-  port: 5432
-  username: brokerx
-  password: brokerxpass
+  host: <%= ENV.fetch('DATABASE_HOST', 'localhost') %>
+  port: <%= ENV.fetch('DATABASE_PORT', 5432) %>
+  username: <%= ENV.fetch('DATABASE_USERNAME', 'brokerx') %>
+  password: <%= ENV.fetch('DATABASE_PASSWORD', 'brokerxpass') %>
 
 development:
   <<: *default
-  database: brokerx_development
+  database: <%= ENV.fetch('POSTGRES_DB', 'brokerx_development') %>
 
 test:
   <<: *default
-  database: brokerx_test
+  database: <%= ENV.fetch('POSTGRES_DB', 'brokerx_test') %>
 
 production:
   <<: *default
-  database: brokerx_production
+  database: <%= ENV.fetch('POSTGRES_DB', 'brokerx_production') %>
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>

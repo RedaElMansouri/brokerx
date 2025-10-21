@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: brokerx_production
+      POSTGRES_USER: brokerx
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brokerx -d brokerx_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: ${IMAGE}
+    environment:
+      RAILS_ENV: production
+      DATABASE_HOST: postgres
+      DATABASE_USERNAME: brokerx
+      DATABASE_PASSWORD: password
+      POSTGRES_DB: brokerx_production
+      RAILS_LOG_TO_STDOUT: '1'
+      RAILS_SERVE_STATIC_FILES: 'true'
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: bash -lc "bundle exec rails db:migrate && bundle exec rails server -b 0.0.0.0 -p 3000"
+
+volumes:
+  postgres_data:

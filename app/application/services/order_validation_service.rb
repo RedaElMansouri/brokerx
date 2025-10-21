@@ -1,6 +1,5 @@
-module Application
-  module Services
-    class OrderValidationService
+module Services
+  class OrderValidationService
       def initialize(portfolio_repository)
         @portfolio_repository = portfolio_repository
       end
@@ -46,6 +45,5 @@ module Application
         # Règle métier : prix entre 1$ et 10,000$
         price >= 1.0 && price <= 10000.0
       end
-    end
   end
 end

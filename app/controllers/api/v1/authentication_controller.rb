@@ -3,9 +3,8 @@ module Api
     class AuthenticationController < ApplicationController
       # Step 1: verify credentials and send MFA code by email
       def login
-        load_dependencies
 
-        use_case = Application::UseCases::AuthenticateUserUseCase.new(client_repository)
+  use_case = ::UseCases::AuthenticateUserUseCase.new(client_repository)
         result = use_case.execute(params[:email].to_s.strip.downcase, params[:password])
 
         client = result[:client]
@@ -14,8 +13,8 @@ module Api
         mfa_code = rand.to_s[2..7] # 6-digit numeric
 
         # Update ActiveRecord client record directly
-        record = Infrastructure::Persistence::ActiveRecord::ClientRecord.find(client.id)
-        record.update(mfa_code: mfa_code, mfa_sent_at: Time.current)
+  record = ::Infrastructure::Persistence::ActiveRecord::ClientRecord.find(client.id)
+    record.update(mfa_code: mfa_code, mfa_sent_at: Time.current, mfa_attempts: 0)
 
         # Send MFA mail (mailer must be configured with SMTP env vars)
         if Rails.env.development?
@@ -31,20 +30,24 @@ module Api
 
       # Step 2: verify MFA code and return JWT
       def verify_mfa
-        load_dependencies
         email = params[:email].to_s.strip.downcase
         code = params[:code].to_s.strip
 
-        record = Infrastructure::Persistence::ActiveRecord::ClientRecord.find_by(email: email)
+  record = ::Infrastructure::Persistence::ActiveRecord::ClientRecord.find_by(email: email)
         return render(json: { success: false, error: 'Invalid email or code' }, status: :unauthorized) unless record
 
-        # check code and expiry (10 minutes)
+        # throttle attempts and check code expiry (10 minutes)
+        if record.last_mfa_attempt_at && record.last_mfa_attempt_at > 1.minute.ago && record.mfa_attempts >= 5
+          return render json: { success: false, error: 'Too many attempts. Try later.' }, status: :too_many_requests
+        end
+        record.update_columns(mfa_attempts: (record.mfa_attempts || 0) + 1, last_mfa_attempt_at: Time.current)
+
         if record.mfa_code == code && record.mfa_sent_at && record.mfa_sent_at > 10.minutes.ago
           # clear MFA fields
-          record.update(mfa_code: nil, mfa_sent_at: nil)
+          record.update(mfa_code: nil, mfa_sent_at: nil, mfa_attempts: 0, last_mfa_attempt_at: nil)
 
           # generate token
-          token = Application::UseCases::AuthenticateUserUseCase.new(client_repository).send(:generate_jwt_token, record.id)
+          token = ::UseCases::AuthenticateUserUseCase.new(client_repository).send(:generate_jwt_token, record.id)
 
           render json: { success: true, token: token }
         else
@@ -56,35 +59,8 @@ module Api
 
       private
 
-      def load_dependencies
-        require_domain_files
-        require_application_files
-        require_infrastructure_files
-      end
-
       def client_repository
         Infrastructure::Persistence::Repositories::ActiveRecordClientRepository.new
-      end
-
-      def require_domain_files
-        load 'app/domain/shared/value_object.rb'
-        load 'app/domain/shared/entity.rb'
-        load 'app/domain/shared/repository.rb'
-        load 'app/domain/clients/value_objects/email.rb'
-        load 'app/domain/clients/value_objects/money.rb'
-        load 'app/domain/clients/entities/client.rb'
-        load 'app/domain/clients/entities/portfolio.rb'
-        load 'app/domain/clients/repositories/client_repository.rb'
-        load 'app/domain/clients/repositories/portfolio_repository.rb'
-      end
-
-      def require_application_files
-        load 'app/application/use_cases/authenticate_user_use_case.rb'
-      end
-
-      def require_infrastructure_files
-        load 'app/models/client_record.rb'
-        load 'app/infrastructure/persistence/repositories/active_record_client_repository.rb'
       end
     end
   end

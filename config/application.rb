@@ -14,18 +14,18 @@ module Brokerx
 
     # Logging
     config.log_level = :info
-    config.autoload_paths += Dir["#{config.root}/app/domain/**/"]
-    config.autoload_paths += Dir["#{config.root}/app/application/**/"]
-    config.autoload_paths += Dir["#{config.root}/app/infrastructure/**/"]
-    config.eager_load_paths += Dir["#{config.root}/app/domain/**/"]
-    config.eager_load_paths += Dir["#{config.root}/app/application/**/"]
-    config.eager_load_paths += Dir["#{config.root}/app/infrastructure/**/"]
+    # Use Rails defaults for autoload/eager load; app/* will be autoloaded and
+    # namespaced per folder names (e.g., Application::, Domain::, Infrastructure::).
+    # CORS: allow only configured origins (comma-separated). Default to localhost for dev.
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-      origins '*'
-      resource '*',
-        headers: :any,
-        methods: [:get, :post, :put, :patch, :delete, :options, :head]
+        allowed = ENV.fetch('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
+        origins(*allowed.split(',').map(&:strip))
+        resource '*',
+                 headers: :any,
+                 methods: [:get, :post, :options],
+                 expose: ['Authorization'],
+                 max_age: 600
       end
     end
 

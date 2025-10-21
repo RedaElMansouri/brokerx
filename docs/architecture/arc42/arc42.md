@@ -168,6 +168,18 @@ web:
     retries: 3
 ```
 
+  ### Note de statut (CI/CD & déploiement)
+
+  - CI: pipeline de build et de préparation de la base fonctionne (tests désactivés pour le moment).
+  - CD: non fonctionnel à ce stade. Le déploiement continu (publication d'image et/ou déploiement automatique) sera livré en Phase 2.
+  - Cible Phase 2:
+    - Publication d'image Docker sur un registre (GHCR) depuis la branche main.
+    - Job de déploiement automatisé (ex. SSH + docker compose sur une VM, ou déploiement cloud managé).
+  - Prérequis: secrets CI (accès registre, SSH/Cloud), fichier docker-compose sur la cible, documentation d'exploitation.
+  - Actions prévues:
+    - Activer la publication d'image et sécuriser les secrets.
+    - Ajouter un job `deploy` et documenter le runbook (rollback, santé, logs).
+
 ## 8. Concepts transverses
 - Sécurité: JWT, MFA, CORS, validation/assainissement entrées
 - Persistance: transactions, idempotency-key pour dépôts/ordres (Phase 2), audit append-only
