@@ -1,5 +1,6 @@
-module Dtos
-  class ClientRegistrationDto
+module Application
+  module Dtos
+    class ClientRegistrationDto
       attr_reader :email, :first_name, :last_name, :date_of_birth, :phone, :password
 
       def initialize(email:, first_name:, last_name:, date_of_birth:, phone: nil, password: nil)
@@ -21,5 +22,6 @@ module Dtos
           password: password
         }
       end
+    end
   end
 end

@@ -5,26 +5,28 @@ module Infrastructure
         def find(id)
           record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.find_by(id: id)
           raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{id}" unless record
-          map_to_entity(record)
+
+          Infrastructure::Persistence::Mappers::PortfolioMapper.to_entity(record)
         end
 
         def find_by_account_id(account_id)
           record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.find_by(account_id: account_id)
           return nil unless record
-          map_to_entity(record)
+
+          Infrastructure::Persistence::Mappers::PortfolioMapper.to_entity(record)
         end
 
         def save(portfolio_entity)
           ::ActiveRecord::Base.transaction do
             record = build_or_find_record(portfolio_entity)
-            record.assign_attributes(map_to_record(portfolio_entity))
+            record.assign_attributes(Infrastructure::Persistence::Mappers::PortfolioMapper.to_record_attributes(portfolio_entity))
 
-            if record.save
-              portfolio_entity.id = record.id
-              portfolio_entity
-            else
+            unless record.save
               raise Domain::Shared::Repository::Error, "Failed to save portfolio: #{record.errors.full_messages}"
             end
+
+            portfolio_entity.id = record.id
+            portfolio_entity
           end
         end
 
@@ -33,16 +35,22 @@ module Infrastructure
             record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.lock.find_by(id: portfolio_id)
             raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{portfolio_id}" unless record
 
-            money_amount = amount.is_a?(Domain::Clients::ValueObjects::Money) ? amount : Domain::Clients::ValueObjects::Money.new(amount, record.currency)
+            money_amount = if amount.is_a?(Domain::Clients::ValueObjects::Money)
+                             amount
+                           else
+                             Domain::Clients::ValueObjects::Money.new(
+                               amount, record.currency
+                             )
+                           end
 
-            if record.available_balance >= money_amount.amount
-              record.available_balance -= money_amount.amount
-              record.reserved_balance += money_amount.amount
-              record.save!
-              map_to_entity(record)
-            else
+            unless record.available_balance >= money_amount.amount
               raise Domain::Shared::Repository::Error, "Insufficient funds in portfolio: #{portfolio_id}"
             end
+
+            record.available_balance -= money_amount.amount
+            record.reserved_balance += money_amount.amount
+            record.save!
+            Infrastructure::Persistence::Mappers::PortfolioMapper.to_entity(record)
           end
         end
 
@@ -51,20 +59,27 @@ module Infrastructure
             record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.lock.find_by(id: portfolio_id)
             raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{portfolio_id}" unless record
 
-            money_amount = amount.is_a?(Domain::Clients::ValueObjects::Money) ? amount : Domain::Clients::ValueObjects::Money.new(amount, record.currency)
+            money_amount = if amount.is_a?(Domain::Clients::ValueObjects::Money)
+                             amount
+                           else
+                             Domain::Clients::ValueObjects::Money.new(
+                               amount, record.currency
+                             )
+                           end
 
-            if record.reserved_balance >= money_amount.amount
-              record.reserved_balance -= money_amount.amount
-              record.available_balance += money_amount.amount
-              record.save!
-              map_to_entity(record)
-            else
+            unless record.reserved_balance >= money_amount.amount
               raise Domain::Shared::Repository::Error, "Insufficient reserved funds in portfolio: #{portfolio_id}"
             end
+
+            record.reserved_balance -= money_amount.amount
+            record.available_balance += money_amount.amount
+            record.save!
+            Infrastructure::Persistence::Mappers::PortfolioMapper.to_entity(record)
           end
         end
 
         private
+
         def build_or_find_record(entity)
           id = entity.id
           if id.is_a?(Integer) || (id.is_a?(String) && id =~ /\A\d+\z/)
@@ -75,26 +90,7 @@ module Infrastructure
           end
         end
 
-        def map_to_entity(record)
-          Domain::Clients::Entities::Portfolio.new(
-            id: record.id,
-            account_id: record.account_id,
-            currency: record.currency,
-            available_balance: record.available_balance,
-            reserved_balance: record.reserved_balance,
-            created_at: record.created_at,
-            updated_at: record.updated_at
-          )
-        end
-
-        def map_to_record(entity)
-          {
-            account_id: entity.account_id,
-            currency: entity.currency,
-            available_balance: entity.available_balance.amount,
-            reserved_balance: entity.reserved_balance.amount
-          }
-        end
+        # mapping handled by Infrastructure::Persistence::Mappers::PortfolioMapper
       end
     end
   end

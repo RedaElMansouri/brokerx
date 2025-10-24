@@ -14,8 +14,8 @@ module Api
           end
         end
 
-        dto = ::Dtos::ClientRegistrationDto.new(**dto_attrs)
-        use_case = ::UseCases::RegisterClientUseCase.new(
+        dto = Application::Dtos::ClientRegistrationDto.new(**dto_attrs)
+        use_case = Application::UseCases::RegisterClientUseCase.new(
           client_repository,
           portfolio_repository
         )
@@ -27,11 +27,9 @@ module Api
         client_email = result[:client].email.value
         if Rails.env.development?
           Rails.logger.info("[DEV VERIFICATION] token for #{client_email}: #{verification_token}")
-        else
+        elsif defined?(VerificationMailer)
           # Use ApplicationMailer or specific mailer to send verification
-          if defined?(VerificationMailer)
-            VerificationMailer.with(email: client_email, token: verification_token).send_verification.deliver_later
-          end
+          VerificationMailer.with(email: client_email, token: verification_token).send_verification.deliver_later
         end
 
         render json: {
@@ -42,10 +40,9 @@ module Api
             full_name: result[:client].full_name,
             status: result[:client].status
           },
-          message: "Registration successful. A verification token has been sent to your email."
+          message: 'Registration successful. A verification token has been sent to your email.'
         }, status: :created
-
-      rescue => e
+      rescue StandardError => e
         logger.error "Registration error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: {
           success: false,
@@ -57,17 +54,16 @@ module Api
         # Rely on Rails autoloading; domain is eager-loaded via initializer
 
         client = client_repository.find_by_verification_token(params[:token])
-        raise "Invalid verification token" unless client
+        raise 'Invalid verification token' unless client
 
         client.activate!(params[:token])
         client_repository.save(client)
 
         render json: {
           success: true,
-          message: "Account activated successfully"
+          message: 'Account activated successfully'
         }
-
-      rescue => e
+      rescue StandardError => e
         logger.error "Verification error: #{e.message}"
         render json: {
           success: false,
@@ -77,7 +73,7 @@ module Api
 
       private
 
-  # No more manual load_dependencies
+      # No more manual load_dependencies
 
       def client_params
         params.require(:client).permit(:email, :first_name, :last_name, :date_of_birth, :phone, :password)

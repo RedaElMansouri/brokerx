@@ -1,12 +1,17 @@
 require 'singleton'
 
-module Services
-  class MatchingEngine
+module Application
+  module Services
+    class MatchingEngine
       include Singleton
 
       def initialize
         @queue = Queue.new
-        @max_queue_size = (ENV.fetch('MATCHING_MAX_QUEUE', '1000').to_i rescue 1000)
+        @max_queue_size = begin
+          ENV.fetch('MATCHING_MAX_QUEUE', '1000').to_i
+        rescue StandardError
+          1000
+        end
         @worker_thread = Thread.new { run }
       end
 
@@ -27,7 +32,7 @@ module Services
           order = @queue.pop
           process(order)
         end
-      rescue => e
+      rescue StandardError => e
         Rails.logger.error("Matching engine error: #{e.message}\n#{e.backtrace.join("\n")}")
         retry
       end
@@ -44,14 +49,15 @@ module Services
             account_id: order[:account_id],
             symbol: order[:symbol],
             quantity: order[:quantity],
-            price: (order[:price] || 0),
+            price: order[:price] || 0,
             side: order[:direction],
             status: 'executed'
           )
-        rescue => e
+        rescue StandardError => e
           Rails.logger.warn("[MATCHING] Failed to log trade: #{e.message}")
         end
         Rails.logger.info("[MATCHING] Order processed: #{order}")
       end
+    end
   end
 end

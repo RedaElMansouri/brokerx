@@ -1,12 +1,7 @@
 module Api
   module V1
     class DepositsController < ApplicationController
-      if respond_to?(:skip_before_action)
-        begin
-          skip_before_action :verify_authenticity_token
-        rescue ArgumentError
-        end
-      end
+      skip_before_action :verify_authenticity_token
 
       def create
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
@@ -17,11 +12,11 @@ module Api
         currency = (params[:currency] || 'USD').to_s
         idempo = request.headers['Idempotency-Key']&.to_s
 
-        use_case = ::UseCases::DepositFundsUseCase.new(portfolio_repository)
+        use_case = Application::UseCases::DepositFundsUseCase.new(portfolio_repository)
         result = use_case.execute(account_id: client_id, amount: amount, currency: currency, idempotency_key: idempo)
 
         render json: { success: true, status: result[:status], transaction_id: result[:transaction_id] }
-      rescue => e
+      rescue StandardError => e
         render json: { success: false, error: e.message }, status: :unprocessable_entity
       end
 
@@ -31,20 +26,24 @@ module Api
         return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
 
         txs = ::Infrastructure::Persistence::ActiveRecord::PortfolioTransactionRecord
-                .where(account_id: client_id, operation_type: 'deposit')
-                .order(created_at: :desc)
-                .limit(20)
+              .where(account_id: client_id, operation_type: 'deposit')
+              .order(created_at: :desc)
+              .limit(20)
 
-        render json: { success: true, deposits: txs.map { |t| { id: t.id, amount: t.amount, currency: t.currency, status: t.status, settled_at: t.settled_at } } }
-      rescue => e
+        render json: { success: true, deposits: txs.map do |t|
+          { id: t.id, amount: t.amount, currency: t.currency, status: t.status, settled_at: t.settled_at }
+        end }
+      rescue StandardError => e
         render json: { success: false, error: e.message }, status: :internal_server_error
       end
 
       private
+
       def token_to_client_id(token)
         return nil unless token
+
         begin
-          payload, _ = JWT.decode(
+          payload, = JWT.decode(
             token,
             Rails.application.secret_key_base,
             true,

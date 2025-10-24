@@ -1,5 +1,6 @@
-module Services
-  class OrderValidationService
+module Application
+  module Services
+    class OrderValidationService
       def initialize(portfolio_repository)
         @portfolio_repository = portfolio_repository
       end
@@ -12,22 +13,16 @@ module Services
           portfolio = @portfolio_repository.find_by_account_id(client_id)
           total_cost = calculate_order_cost(order_dto)
 
-          unless portfolio&.sufficient_funds?(total_cost)
-            errors << "Insufficient funds"
-          end
+          errors << 'Insufficient funds' unless portfolio&.sufficient_funds?(total_cost)
         end
 
         # Vérifier les règles de prix pour les ordres limites
-        if order_dto.order_type == 'limit' && order_dto.price
-          unless valid_price_band?(order_dto.price)
-            errors << "Price outside valid trading band"
-          end
+        if order_dto.order_type == 'limit' && order_dto.price && !valid_price_band?(order_dto.price)
+          errors << 'Price outside valid trading band'
         end
 
         # Vérifier la quantité
-        unless order_dto.quantity > 0
-          errors << "Quantity must be positive"
-        end
+        errors << 'Quantity must be positive' unless order_dto.quantity > 0
 
         errors
       end
@@ -43,7 +38,8 @@ module Services
 
       def valid_price_band?(price)
         # Règle métier : prix entre 1$ et 10,000$
-        price >= 1.0 && price <= 10000.0
+        price >= 1.0 && price <= 10_000.0
       end
+    end
   end
 end

@@ -1,12 +1,7 @@
 module Api
   module V1
     class PortfoliosController < ApplicationController
-      if respond_to?(:skip_before_action)
-        begin
-          skip_before_action :verify_authenticity_token
-        rescue ArgumentError
-        end
-      end
+      skip_before_action :verify_authenticity_token if respond_to?(:skip_before_action)
 
       def show
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
@@ -24,15 +19,17 @@ module Api
           reserved_balance: portfolio.reserved_balance.amount,
           total_balance: portfolio.total_balance.amount
         }
-      rescue => e
+      rescue StandardError => e
         render json: { success: false, error: e.message }, status: :internal_server_error
       end
 
       private
+
       def token_to_client_id(token)
         return nil unless token
+
         begin
-          payload, _ = JWT.decode(
+          payload, = JWT.decode(
             token,
             Rails.application.secret_key_base,
             true,

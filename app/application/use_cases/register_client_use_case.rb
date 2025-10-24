@@ -1,5 +1,6 @@
-module UseCases
-  class RegisterClientUseCase
+module Application
+  module UseCases
+    class RegisterClientUseCase
       def initialize(client_repository, portfolio_repository)
         @client_repository = client_repository
         @portfolio_repository = portfolio_repository
@@ -8,7 +9,7 @@ module UseCases
       def execute(dto)
         # Vérifier si l'email existe déjà
         existing_client = @client_repository.find_by_email(dto.email)
-        raise "Email already exists" if existing_client
+        raise 'Email already exists' if existing_client
 
         # Créer le client
         client = Domain::Clients::Entities::Client.new(
@@ -28,7 +29,6 @@ module UseCases
           ar.password = dto.password
           ar.save!
         end
-
 
         # Créer un portfolio pour le client
         portfolio = Domain::Clients::Entities::Portfolio.new(
@@ -54,5 +54,6 @@ module UseCases
       def generate_verification_token
         SecureRandom.hex(20)
       end
+    end
   end
 end
