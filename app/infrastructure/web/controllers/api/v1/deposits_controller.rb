@@ -1,9 +1,11 @@
 module Api
   module V1
     class DepositsController < ApplicationController
+      # Endpoints API : pas de vérification CSRF nécessaire
       skip_before_action :verify_authenticity_token
 
       def create
+        # Dépôt de fonds idempotent sur le portefeuille du client
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
         return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
@@ -17,10 +19,11 @@ module Api
 
         render json: { success: true, status: result[:status], transaction_id: result[:transaction_id] }
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :unprocessable_entity
+        render json: { success: false, error: e.message }, status: :unprocessable_content
       end
 
       def index
+        # Liste des dépôts récents (limités) pour le client authentifié
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
         return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id

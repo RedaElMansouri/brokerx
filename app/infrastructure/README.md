@@ -1,13 +1,13 @@
-# Infrastructure Layer (`Infrastructure::`)
+# Couche Infrastructure (`Infrastructure::`)
 
-Purpose: Technical details and adapters for the outside world.
+Objectif : détails techniques et adaptateurs vers le monde extérieur.
 
-Common subfolders:
-- `persistence/` → ActiveRecord models (`ActiveRecord::Base`), repository implementations
-- `external/` → HTTP clients, queues, 3rd-party integrations
-- `web/` → (optional) HTTP controllers/serializers if you decide to colocate web adapters under infrastructure
+Sous-dossiers courants :
+- `persistence/` → modèles ActiveRecord (`ActiveRecord::Base`), implémentations de repositories
+- `external/` → clients HTTP, files, intégrations tierces
+- `web/` → (optionnel) contrôleurs/sérialiseurs HTTP si vous placez les adaptateurs web ici
 
-Guidelines:
-- Convert between ActiveRecord records and Domain entities via mappers.
-- Keep ACID/transactions here; expose clean methods to Application layer.
-- Controllers should resolve Application use cases and repositories; avoid putting business logic in controllers.
+Principes :
+- Convertir entre enregistrements ActiveRecord et entités de Domaine via des mappers.
+- Préserver ACID/transactions ici ; exposer des méthodes propres à la couche Application.
+- Les contrôleurs résolvent les cas d’usage et repositories Applicatifs ; éviter la logique métier dans les contrôleurs.

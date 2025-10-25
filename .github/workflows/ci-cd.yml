@@ -13,9 +13,47 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Lint (RuboCop)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.2'
+      - name: Install RuboCop
+        run: |
+          gem install rubocop -N
+      - name: Run RuboCop
+        run: |
+          rubocop
+
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image
+        run: |
+          docker build -t brokerx:${{ github.sha }} .
+      - name: Save image artifact
+        run: |
+          docker save brokerx:${{ github.sha }} | gzip > brokerx-image.tar.gz
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: brokerx-image
+          path: brokerx-image.tar.gz
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    needs: build
 
     services:
       postgres:
@@ -76,6 +114,12 @@ jobs:
           else
             bundle exec rails test
           fi
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
 
       - name: RuboCop (non-blocking)
         run: |
@@ -96,6 +140,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Backup current release on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            if [ -d /opt/brokerx ]; then
+              TS=$(date +%Y%m%d%H%M%S)
+              tar -czf /opt/brokerx_backup_$TS.tgz -C /opt brokerx
+              echo "Backup created: /opt/brokerx_backup_$TS.tgz"
+            fi
 
       - name: Upload repository to server
         uses: appleboy/scp-action@v0.1.7

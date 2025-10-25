@@ -1,15 +1,15 @@
-# Domain Layer (`Domain::`)
+# Couche Domaine (`Domain::`)
 
-Purpose: Express business concepts and rules with no framework/DB concerns.
+Objectif : exprimer les concepts et règles métier sans dépendance au framework/à la base de données.
 
-Structure:
-- `shared/` base abstractions (`Entity`, `ValueObject`, `Repository`)
-- `<bounded_context>/entities/` domain entities
-- `<bounded_context>/value_objects/` immutable types
-- `<bounded_context>/repositories/` repository interfaces (ports)
+Structure :
+- `shared/` abstractions de base (`Entity`, `ValueObject`, `Repository`)
+- `<bounded_context>/entities/` entités du domaine
+- `<bounded_context>/value_objects/` types immuables
+- `<bounded_context>/repositories/` interfaces de repository (ports)
 
-Guidelines:
-- No ActiveRecord or Rails dependencies.
-- Validate invariants in constructors/factory methods.
-- Prefer explicit domain errors.
-- Keep aggregate boundaries clear; repository interfaces operate on aggregates.
+Principes :
+- Aucune dépendance à ActiveRecord ou Rails.
+- Valider les invariants dans les constructeurs/méthodes de fabrique.
+- Préférer des erreurs métier explicites.
+- Conserver des limites d’agrégat claires ; les interfaces de repository opèrent sur des agrégats.

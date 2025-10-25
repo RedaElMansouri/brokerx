@@ -1,28 +1,55 @@
 # BrokerX
 
-Welcome to BrokerX. This repository contains a Rails 7 API with a DDD-inspired structure (Domain, Application, Infrastructure).
+[![CI/CD](https://github.com/RedaElMansouri/brokerx/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/RedaElMansouri/brokerx/actions/workflows/ci-cd.yml)
+
+Bienvenue sur BrokerX. Ce dépôt contient une API Rails 7 avec une architecture inspirée DDD (Domaine, Application, Infrastructure).
 
 ## Documentation
 
-- Phase 0 summary (RDoc): `docs/rdoc/P0_Report.rdoc`
-- Environment & configuration (RDoc): `docs/rdoc/Environment.rdoc`
-- Additional docs are under `docs/` (architecture, operations, DDD notes, testing, etc.).
+- Synthèse Phase 0 (RDoc) : `docs/rdoc/P0_Report.rdoc`
+- Environnement & configuration (RDoc) : `docs/rdoc/Environment.rdoc`
+- Autres documents sous `docs/` (architecture, exploitation, DDD, tests, etc.).
 
-## Getting started
+## Prise en main
 
-See `docs/operations/runbook.md` for environment setup, running migrations, and starting the app.
+Voir `docs/operations/runbook.md` pour préparer l’environnement, exécuter les migrations et démarrer l’application.
 
 ## CI/CD
 
-This repo includes a single GitHub Actions workflow for continuous integration and delivery:
+Ce dépôt inclut un unique workflow GitHub Actions pour l’intégration et la livraison continues :
 
-- CI/CD: `.github/workflows/ci-cd.yml`
-	- CI: Runs tests on PRs and pushes to `main` (Ruby 3.2.2, Postgres 15, `rails db:prepare`, then `rspec` or `rails test`). RuboCop runs non-blocking if available.
-	- CD (SSH-based): On push events (not PRs), deploys over SSH to a server by copying the repo to `/opt/brokerx` and running `docker compose up -d --build` remotely using `docker-compose.yml`.
-		- Requires repo secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (PEM). Optionally `DEPLOY_PATH` (defaults to `/opt/brokerx`).
-		- Prerequisites on the server: Docker Engine and Docker Compose v2 (`docker compose`). Port 3000 exposed.
-		- Note: The provided compose file is development-oriented (RAILS_ENV=development, mounts code). For production, consider a separate compose file with `RAILS_ENV=production`, secrets, and hardened settings.
+- CI/CD : `.github/workflows/ci-cd.yml`
+	- Lint : RuboCop
+	- Build : construction de l’image Docker (multi‑étages) et upload comme artefact
+	- Tests : unitaires/intégration/E2E (Rails test) avec publication du rapport de couverture
+	- CD (via SSH) : lors d’un push (hors PR), déploie sur une VM en copiant le dépôt vers `/opt/brokerx`, en sauvegardant la version précédente puis en lançant `docker compose up -d --build`.
+		- Secrets requis : `SSH_HOST`, `SSH_USER`, `SSH_PASSWORD`.
+		- Prérequis côté VM : Docker Engine et Docker Compose v2 (`docker compose`). Port 3000 exposé.
+		- Remarque : le `docker-compose.yml` fourni est orienté développement (RAILS_ENV=development, montages). Pour la prod, prévoir un fichier dédié avec `RAILS_ENV=production`, secrets et durcissements.
 
-### Deployment
+### Déploiement
 
-The CI/CD workflow builds and publishes a Docker image to GHCR. No Docker Compose deployment is included in this project by design. If you later want automated deployment (e.g., to a VM or container platform), we can add an appropriate deploy job or provide environment-specific manifests.
+- En un clic via GitHub Actions : un push sur `main` déclenche les tests puis le déploiement SSH.
+- Scripts locaux : voir `scripts/deploy_vm.sh` et `scripts/rollback_vm.sh`.
+
+Rollback : le workflow crée une sauvegarde datée sur la VM (ex : `/opt/brokerx_backup_YYYYmmddHHMMSS.tgz`). Utiliser le script de rollback pour restaurer.
+
+## Qualité, tests et sécurité
+
+- Pyramide de tests :
+	- Unitaires : services applicatifs (ex : `OrderValidationService`).
+	- Intégration : endpoints API (contrôleurs) avec base de données.
+	- E2E : scénario clé bout‑en‑bout (ex : dépôt + ordre d’achat).
+
+- Couverture ciblée :
+	- SimpleCov est activé dans `test/test_helper.rb` avec un groupe « Critical » (application/services, contrôleurs API).
+	- Gate : échec du pipeline si la couverture du groupe « Critical » < 80% (seuil configurable via `CRITICAL_MIN_COVERAGE`).
+
+- E2E minimal :
+	- `test/integration/e2e_orders_flow_test.rb` : place un ordre d’achat (market) via l’API avec JWT valide.
+
+- Sécurité de base :
+	- Gestion d’erreurs JSON uniformisée via `ApplicationController` (`code`, `message`, statuts HTTP standard).
+	- Validation/assainissement d’entrées : strong params (`order_params`) dans `OrdersController`.
+	- Logs d’accès structurés (JSON) activables via Lograge (`config/initializers/lograge.rb`).
+	- Secrets : pas de secrets en clair dans le code ; utiliser des variables d’environnement (ex : `SECRET_KEY_BASE`).

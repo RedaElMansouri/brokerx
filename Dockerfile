@@ -1,40 +1,61 @@
-# Dockerfile
-FROM ruby:3.2.2-slim-bookworm
+## Dockerfile multi-étages (proche production)
 
-# Installer les dépendances système
+# --- Image de base avec dépendances système
+FROM ruby:3.2.2-slim-bookworm AS base
+
+ENV BUNDLE_WITHOUT=development:test \
+    BUNDLE_JOBS=4 \
+    BUNDLE_RETRY=3
+
 RUN apt-get update -qq && \
-    apt-get install -y \
-    build-essential \
-    pkg-config \
-    libpq-dev \
-    nodejs \
-    npm \
-    git \
-    curl \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        pkg-config \
+        libpq-dev \
+        nodejs \
+        npm \
+        git \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Installer Yarn
 RUN npm install -g yarn
 
-# Créer le répertoire de l'application
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# --- Étape builder : installation des gems et préparation de l'application
+FROM base AS builder
+
 COPY Gemfile Gemfile.lock ./
-
-# Installer les gems
 RUN bundle config set force_ruby_platform true && \
-    bundle config set without 'development test' && \
-    bundle install --jobs=4 --retry=3
+    bundle install && \
+    bundle clean
 
-# Copier le reste de l'application
 COPY . .
 
-# Créer le dossier pour les PID files
-RUN mkdir -p tmp/pids
+# --- Étape exécution : image allégée (dépendances runtime + application + gems)
+FROM ruby:3.2.2-slim-bookworm AS runtime
 
-# Exposer le port
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+        libpq-dev \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV RAILS_ENV=production \
+    RACK_ENV=production \
+    RAILS_LOG_TO_STDOUT=true
+
+WORKDIR /app
+
+# Copier les gems Ruby depuis l'étape builder
+COPY --from=builder /usr/local/bundle /usr/local/bundle
+
+# Copier le code de l'application
+COPY --from=builder /app /app
+
+# Créer les répertoires temporaires utilisés par Rails/Puma
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets
+
 EXPOSE 3000
 
-# Commande de démarrage
 CMD ["bash", "-lc", "bundle exec rails server -b 0.0.0.0 -p 3000"]

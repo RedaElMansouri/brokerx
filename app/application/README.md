@@ -1,13 +1,13 @@
-# Application Layer (`Application::`)
+# Couche Application (`Application::`)
 
-Purpose: Coordinate use cases and orchestrate domain operations; define system inputs/outputs independent of transport/UI.
+Objectif : coordonner les cas d’usage et orchestrer les opérations du domaine ; définir les entrées/sorties du système indépendamment du transport/UI.
 
-Folders:
-- `use_cases/` → one class per use case (Application::UseCases::*)
-- `dtos/` → plain data carriers for commands/responses (Application::Dtos::*)
-- `services/` → cross-UC app services (e.g., validation, schedulers, orchestrators)
+Dossiers :
+- `use_cases/` → une classe par cas d’usage (Application::UseCases::*)
+- `dtos/` → objets de transfert de données (commandes/réponses) (Application::Dtos::*)
+- `services/` → services applicatifs transverses (ex : validation, ordonnanceurs, orchestrateurs)
 
-Guidelines:
-- Depends on Domain abstractions; do not reference ActiveRecord.
-- Accept simple primitives or DTOs; return DTOs/primitives.
-- Inject repository interfaces (or adapters via DI from controllers).
+Principes :
+- Dépend des abstractions du Domaine ; ne pas référencer ActiveRecord.
+- Accepte des types simples ou des DTOs ; retourne des DTOs/types simples.
+- Injecte des interfaces de repository (ou des adaptateurs via DI depuis les contrôleurs).

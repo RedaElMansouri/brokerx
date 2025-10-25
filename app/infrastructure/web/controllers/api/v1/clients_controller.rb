@@ -2,15 +2,16 @@ module Api
   module V1
     class ClientsController < ApplicationController
       def create
-        # Rely on Rails autoloading; domain is eager-loaded via initializer
+        # Inscription d'un client (crée un portefeuille associé)
 
-        # Ensure we pass keyword args to the DTO (it requires keywords)
+        # Garantir des mots-clés pour le DTO
         dto_attrs = client_params.to_h.symbolize_keys
         if dto_attrs[:date_of_birth].is_a?(String)
           begin
             dto_attrs[:date_of_birth] = Date.parse(dto_attrs[:date_of_birth])
           rescue ArgumentError
-            return render json: { success: false, error: 'Invalid date_of_birth format' }, status: :unprocessable_entity
+            return render json: { success: false, error: 'Invalid date_of_birth format' },
+                          status: :unprocessable_content
           end
         end
 
@@ -22,13 +23,13 @@ module Api
 
         result = use_case.execute(dto)
 
-        # Send verification link / token by email (or log in development)
+        # Envoi du lien/token de vérification par email (ou journalisation en dev)
         verification_token = result[:verification_token]
         client_email = result[:client].email.value
         if Rails.env.development?
           Rails.logger.info("[DEV VERIFICATION] token for #{client_email}: #{verification_token}")
         elsif defined?(VerificationMailer)
-          # Use ApplicationMailer or specific mailer to send verification
+          # Utiliser un mailer pour expédier la vérification
           VerificationMailer.with(email: client_email, token: verification_token).send_verification.deliver_later
         end
 
@@ -47,11 +48,11 @@ module Api
         render json: {
           success: false,
           error: e.message
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
       end
 
       def verify
-        # Rely on Rails autoloading; domain is eager-loaded via initializer
+        # Activation de compte via token de vérification
 
         client = client_repository.find_by_verification_token(params[:token])
         raise 'Invalid verification token' unless client
@@ -68,12 +69,12 @@ module Api
         render json: {
           success: false,
           error: e.message
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
       end
 
       private
 
-      # No more manual load_dependencies
+      # Paramètres forts
 
       def client_params
         params.require(:client).permit(:email, :first_name, :last_name, :date_of_birth, :phone, :password)
