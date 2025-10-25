@@ -67,7 +67,7 @@ jobs:
 
       - name: Prepare database
         run: |
-          bin/rails db:prepare
+          bundle exec rails db:prepare
 
       - name: Run tests
         run: |
