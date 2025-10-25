@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   test:
@@ -28,10 +27,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U brokerx -d brokerx_test" \
-          --health-interval=10s \
-          --health-timeout=5s \
-          --health-retries=5
+          --health-cmd "pg_isready -U brokerx -d brokerx_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       RAILS_ENV: test
@@ -84,54 +83,41 @@ jobs:
             bundle exec rubocop || true
           fi
 
-  build-and-push:
-    name: Build and push to GHCR
+  
+
+  deploy-ssh:
+    name: Deploy over SSH (no registry)
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push'
-
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-deploy
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Upload repository to server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "."
+          target: "/opt/brokerx"
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Remote compose up (build and start)
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=sha,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            sudo mkdir -p /opt/brokerx
+            sudo chown -R "$USER" /opt/brokerx
+            cd /opt/brokerx
+            docker compose down --remove-orphans || true
+            docker compose up -d --build
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Set IMAGE output
-        id: image
-        run: |
-          IMAGE="$(echo "${{ steps.meta.outputs.tags }}" | tr ' ' '\n' | grep -E 'latest$|:\w{7,}$' | head -n1)"
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-
-    outputs:
-      image: ${{ steps.image.outputs.image }}
+  
