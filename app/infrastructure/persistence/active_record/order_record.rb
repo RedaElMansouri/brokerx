@@ -13,6 +13,7 @@ module Infrastructure
         validates :time_in_force, inclusion: { in: %w[DAY GTC IOC FOK] }
         validates :status, inclusion: { in: %w[new working filled cancelled] }
         validates :client_order_id, length: { maximum: 255 }, allow_nil: true
+  validates :symbol, format: { with: /\A[A-Z\.]{1,10}\z/, message: 'is invalid' }
 
         before_validation do
           self.symbol = symbol&.upcase

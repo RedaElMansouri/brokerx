@@ -281,6 +281,33 @@ function requireAuth() {
     });
 })();
 
+// ---- Notifications: subscribe to per-user OrdersChannel to receive trade updates ----
+(function(){
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+    function ensureCable(cb) {
+        if (window.ActionCable) return cb();
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/@rails/actioncable@7.1.5/dist/actioncable.umd.js';
+        s.onload = cb; s.onerror = cb; document.head.appendChild(s);
+    }
+    ensureCable(()=>{
+        try {
+            const wsURL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + `/cable?token=${encodeURIComponent(token)}`;
+            const consumer = window.ActionCable ? window.ActionCable.createConsumer(wsURL) : null;
+            if (!consumer) return;
+            consumer.subscriptions.create({ channel: 'OrdersChannel' }, {
+                connected(){ console.debug('OrdersChannel connected'); },
+                received(msg){
+                    if (msg && msg.type === 'trade' && msg.order_id && window.OrdersPanel && OrdersPanel.fetchAndAdd) {
+                        try { OrdersPanel.fetchAndAdd(msg.order_id); } catch(_){}
+                    }
+                }
+            });
+        } catch(e) { console.warn('OrdersChannel error', e); }
+    });
+})();
+
 // ---- UC-06: Panneau ordres avec modifier/annuler ----
 const OrdersPanel = (function(){
     const tbody = document.getElementById('ordersTbody');

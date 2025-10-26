@@ -29,7 +29,7 @@ module Api
 
         validation_service = Application::Services::OrderValidationService.new(portfolio_repository)
         errors = validation_service.validate_pre_trade(dto, client_id)
-        return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
+  return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         created_order = nil
@@ -85,6 +85,7 @@ module Api
         # Envoyer à l'engine de matching (simple, en mémoire)
         Application::Services::MatchingEngine.instance.enqueue_order(dto.to_h.merge(order_id: created_order.id))
 
+        Infrastructure::Observability::Metrics.inc_counter('orders_accepted_total', { symbol: created_order.symbol, side: created_order.direction })
         render json: { success: true, order_id: created_order.id, lock_version: created_order.lock_version, message: 'Order accepted and queued for matching' }
       end
 
@@ -222,7 +223,7 @@ module Api
         )
         validation_service = Application::Services::OrderValidationService.new(portfolio_repository)
         errors = validation_service.validate_pre_trade(dto, client_id)
-        return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
+  return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
 
         # Ajuster les fonds + mise à jour atomiques
         ::ActiveRecord::Base.transaction do

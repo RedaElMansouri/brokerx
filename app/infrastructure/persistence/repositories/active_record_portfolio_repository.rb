@@ -78,6 +78,30 @@ module Infrastructure
           end
         end
 
+        # Commit reserved funds after a trade executes: decrease reserved_balance without refunding available_balance
+        def commit_reserved_funds(portfolio_id, amount)
+          ::ActiveRecord::Base.transaction do
+            record = Infrastructure::Persistence::ActiveRecord::PortfolioRecord.lock.find_by(id: portfolio_id)
+            raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{portfolio_id}" unless record
+
+            money_amount = if amount.is_a?(Domain::Clients::ValueObjects::Money)
+                              amount
+                            else
+                              Domain::Clients::ValueObjects::Money.new(
+                                amount, record.currency
+                              )
+                            end
+
+            unless record.reserved_balance >= money_amount.amount
+              raise Domain::Shared::Repository::Error, "Insufficient reserved funds in portfolio: #{portfolio_id}"
+            end
+
+            record.reserved_balance -= money_amount.amount
+            record.save!
+            Infrastructure::Persistence::Mappers::PortfolioMapper.to_entity(record)
+          end
+        end
+
         private
 
         def build_or_find_record(entity)

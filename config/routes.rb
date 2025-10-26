@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  # Metrics endpoint (Prometheus exposition format)
+  get '/metrics', to: 'metrics#index'
   # Chemin racine — page statique
   root 'static#index'
 

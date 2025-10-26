@@ -1,0 +1,75 @@
+{
+    "annotations": { "list": [] },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "panels": [
+    {
+        "type": "stat",
+        "title": "RPS (req/s)",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+        {
+            "expr": "sum(rate(http_requests_total[1m]))",
+            "legendFormat": "rps"
+        }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "HTTP latency p95 (s)",
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+        "targets": [
+        {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+            "legendFormat": "p95"
+        }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "HTTP by status (rate)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [
+        { "expr": "sum(rate(http_requests_total{code=~\"2..\"}[1m]))", "legendFormat": "2xx" },
+        { "expr": "sum(rate(http_requests_total{code=~\"4..\"}[1m]))", "legendFormat": "4xx" },
+        { "expr": "sum(rate(http_requests_total{code=~\"5..\"}[1m]))", "legendFormat": "5xx" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Matching queue size",
+        "gridPos": { "h": 6, "w": 6, "x": 12, "y": 8 },
+        "targets": [
+        { "expr": "matching_queue_size", "legendFormat": "queue" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "ActionCable connections",
+        "gridPos": { "h": 6, "w": 6, "x": 18, "y": 8 },
+        "targets": [
+        { "expr": "cable_connections", "legendFormat": "ws" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Orders/Trades (rate by symbol)",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+        "targets": [
+        { "expr": "sum by (symbol)(rate(orders_accepted_total[1m]))", "legendFormat": "accepted {{symbol}}" },
+        { "expr": "sum by (symbol)(rate(orders_enqueued_total[1m]))", "legendFormat": "enqueued {{symbol}}" },
+        { "expr": "sum by (symbol)(rate(orders_matched_total[1m]))", "legendFormat": "matched {{symbol}}" },
+        { "expr": "sum by (symbol)(rate(trades_executed_total[1m]))", "legendFormat": "trades {{symbol}}" }
+        ]
+    }
+    ],
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["brokerx"],
+    "templating": { "list": [] },
+    "time": { "from": "now-15m", "to": "now" },
+    "timezone": "browser",
+    "title": "BrokerX - Golden Signals",
+    "version": 1
+}

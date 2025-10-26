@@ -5,6 +5,20 @@ module ApplicationCable
     def connect
       self.current_client_id = authenticate!
       reject_unauthorized_connection unless current_client_id
+      begin
+        Infrastructure::Observability::Metrics.inc_counter('cable_connections_total', {})
+        # naive gauge update based on thread count of streams is tricky; keep a monotonic counter + best-effort gauge
+        Infrastructure::Observability::Metrics.set_gauge('cable_connections', (Infrastructure::Observability::Metrics.instance_variable_get(:@gauges)['cable_connections'].values.first || 0) + 1)
+      rescue StandardError
+      end
+    end
+
+    def disconnect
+      begin
+        current = Infrastructure::Observability::Metrics.instance_variable_get(:@gauges)['cable_connections'].values.first || 1
+        Infrastructure::Observability::Metrics.set_gauge('cable_connections', [current - 1, 0].max)
+      rescue StandardError
+      end
     end
 
     private

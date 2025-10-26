@@ -68,4 +68,11 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Allow Prometheus (running in Docker) to scrape using host.docker.internal
+  # and make HostAuthorization ignore the /metrics endpoint entirely in development.
+  config.hosts << "host.docker.internal"
+  config.host_authorization = {
+    exclude: ->(req) { req.path == "/metrics" }
+  }
 end
