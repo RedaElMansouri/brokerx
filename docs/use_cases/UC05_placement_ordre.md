@@ -44,90 +44,116 @@ Le Client soumet un ordre depuis l'interface de trading.
    - Type : Marché ou Limite
    - Quantité : nombre d'actions (> 0)
    - Prix : obligatoire pour limite, ignoré pour marché
-   - Durée : DAY (valide journée), IOC (immédiat ou annulé)
+  ## Objectif
+  Permettre aux clients de soumettre des ordres d'achat ou de vente (marché ou limite), validés par des contrôles pré-trade, avec réservation de fonds pour les achats, persistance et envoi au moteur d'appariement.
 
-2. **Système** normalise et horodate l'ordre :
-   - Timestamp système en UTC (nanosecondes)
-   - Génération OrderID unique
-   - Normalisation format prix (arrondi tick size)
+  ## Postconditions (Succès)
+  - Ordre accepté et accusé de réception (ACK) avec `order_id` et `lock_version`
+  - Ordre persistant (statut `new`) et mis en file auprès du moteur d'appariement
+  - Portefeuille mis à jour (réservation de fonds pour les achats)
 
 3. **Système** exécute les contrôles pré-trade :
-
+     - Durée : DAY (défaut), GTC, IOC, FOK
    ### 3.1 - Contrôle pouvoir d'achat/marge
-   - **Achat**: Solde disponible ≥ (quantité × prix limite) OU prix marché courant
-   - **Vente**: Quantité disponible en portefeuille ≥ quantité ordre
-
+  2. **Système** normalise :
+     - Symbol en majuscules
+     - Génération d'un `order_id`
+     - Pas de tick size dans ce prototype (prix décimal accepté)
    ### 3.2 - Règles de prix
+  3. **Système** exécute les contrôles pré-trade (implémentés) :
    - **Limite**: Prix dans les bandes autorisées (±5% dernier cours)
-   - **Tick size**: Prix multiple de 0.01€
-
+     ### 3.1 - Contrôle pouvoir d'achat
+     - **Achat** : Solde disponible ≥ (quantité × prix) — pour Marché, un prix par défaut est utilisé (prototype)
    ### 3.3 - Restrictions trading
-   - Instrument actif et tradable
-   - Pas d'interdiction de short-selling (sauf autorisé)
+     ### 3.2 - Règles de prix
+     - **Limite** : Prix dans la bande autorisée [1.00, 10 000.00]
+     - Tick size non enforcé dans ce prototype
    - Heures de trading respectées
-
-   ### 3.4 - Limites utilisateur
-   - Taille max par ordre : 10 000€
-   - Nombre max d'ordres simultanés : 10
-
+     ### 3.4 - Sanity checks
+     - Quantité strictement > 0 (entier)
    ### 3.5 - Sanity checks
-   - Quantité > 0 et multiple de 1
-   - Symbol existe et valide
-
-4. **Si tous les contrôles OK** :
+  4. **Si tous les contrôles OK** :
+     - Réserver les fonds (ACHAT) via le Repository Portefeuille
+     - Persister l'ordre (statut `new`, `reserved_amount` pour ACHAT)
+     - Envoyer au moteur d'appariement interne (thread en mémoire)
+     - Retourner ACK JSON incluant `order_id`, `lock_version`
    - Système attribue OrderID unique
-   - Persiste l'ordre en statut "NEW"
-   - Achemine vers le moteur d'appariement interne
-   - Retourne ACK au client
-
+  ### A3 - Idempotence (non implémentée pour UC‑05)
+  - Idempotence des ordres n’est pas implémentée dans ce prototype.
+  - L’idempotence existe pour les dépôts (UC‑03) via `Idempotency-Key`.
 5. **Moteur d'appariement** prend le relais (UC-07)
+  ### E2 - Violation bande de prix
+    - Message "Price outside valid trading band"
 
-## Flux Alternatifs
-
-### A1 - Ordre au marché
-- **Condition**: Type = "MARCHÉ"
-- **Traitement**:
-  - Prix non requis (utilise meilleur prix disponible)
+  ### E4 - (Non implémenté) Limites utilisateur
+  Non enforcé dans ce prototype.
   - Routage immédiat vers matching
   - Contrôle pouvoir d'achat avec prix marché courant
-
-### A2 - Ordre IOC/FOK
-- **Condition**: Durée = "IOC" (Immediate Or Cancel)
-- **Traitement**:
+  - **Résultat attendu** :
+    - Ordre accepté (ACK JSON) avec `order_id`, `lock_version`
+    - `reserved_amount` = 1 000€
   - Exécute la quantité possible immédiatement
   - Annule le reste non exécuté
-
-### A3 - Idempotence
-- **Condition**: clientOrderId déjà traité
-- **Traitement**:
+  - **Résultat attendu** :
+    - Statut HTTP 422
+    - `errors` contient "Insufficient funds"
   - Renvoie le résultat précédent
   - Évite les doublons
-
-## Exceptions
-
-### E1 - Pouvoir d'achat insuffisant
+  - **Résultat attendu** :
+    - Statut HTTP 422
+    - `errors` contient "Price outside valid trading band"
 - **Condition**: Solde < montant ordre
 - **Traitement**:
-  - Rejet immédiat
-  - Message "Solde insuffisant"
-  - Code erreur : INSUFFICIENT_FUNDS
-
-### E2 - Violation bande de prix
-- **Condition**: Prix limite hors bandes autorisées
+  ### CA-05.04 - (Non implémenté) Idempotence ordre
+  Voir UC‑03 pour l’idempotence des dépôts.
 - **Traitement**:
-  - Rejet immédiat
-  - Message "Prix hors limites"
-  - Suggestion de prix valide
+  ## Métriques
+  - Latence ordre → ACK (observable via logs)
+  - Taux de rejet par type (insufficient funds, price band, quantity)
 
-### E3 - Instrument non tradable
-- **Condition**: Symbol inactif ou inexistant
-- **Traitement**:
+  ## Aspects Sécurité
+  - Authentification par JWT (header Authorization)
+  - Validation côté serveur
+  - Journalisation
   - Rejet immédiat
-  - Message "Instrument non disponible"
+  ## Règles Métier (implémentées dans le prototype)
+  - Prix limite dans [1.00, 10 000.00]
+  - Quantité > 0 (entier)
+  - Engagement immédiat des fonds (ACHAT)
 
-### E4 - Limite utilisateur dépassée
-- **Condition**: Nombre max d'ordres atteint
-- **Traitement**:
+  ---
+
+  ## API — Placement d’ordre (implémentation actuelle)
+
+  Endpoint : `POST /api/v1/orders`
+
+  Headers : `Authorization: Bearer <token>`, `Content-Type: application/json`
+
+  Body :
+  ```json
+  {
+    "order": {
+      "symbol": "AAPL",
+      "order_type": "limit",
+      "direction": "buy",
+      "quantity": 10,
+      "price": 100.0,
+      "time_in_force": "DAY"
+    }
+  }
+  ```
+
+  Réponse 200 :
+  ```json
+  { "success": true, "order_id": 123, "lock_version": 0, "message": "Order accepted and queued for matching" }
+  ```
+
+  Réponse 422 (exemples) :
+  ```json
+  { "success": false, "errors": ["Insufficient funds"] }
+  ```
+
+  Voir aussi : UC‑06 pour modifier/annuler un ordre existant (optimistic locking).
   - Rejet immédiat
   - Message "Limite d'ordres simultanés atteinte"
 

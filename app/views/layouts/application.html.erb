@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BrokerX+</title>
   <%= stylesheet_link_tag "/stylesheets/application.css?v=#{File.mtime(Rails.root.join('public','stylesheets','application.css')).to_i}", media: 'all' %>
+  <% if File.exist?(Rails.root.join('public','stylesheets','orders.css')) %>
+    <%= stylesheet_link_tag "/stylesheets/orders.css?v=#{File.mtime(Rails.root.join('public','stylesheets','orders.css')).to_i}", media: 'all' %>
+  <% end %>
   <%= javascript_include_tag 'application' if Rails.application.config.respond_to?(:assets) %>
   </head>
   <body>

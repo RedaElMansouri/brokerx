@@ -1,7 +1,7 @@
 # ADR 001: Choix du style architectural - Hexagonal vs MVC
 
 ## Statut
-**Proposé** | **Date**: 2025-09-02 | **Décideurs**: Architecte logiciel
+**Approuvé** | **Date**: 2025-09-02 | **Décideurs**: Architecte logiciel
 
 ## Contexte
 Le projet BrokerX+ nécessite une architecture monolithique initiale qui doit évoluer vers des microservices. Nous devons choisir entre une architecture traditionnelle MVC Rails et une architecture hexagonale (ports/adapters) qui offre une meilleure séparation des concerns et prépare la migration future.
@@ -43,8 +43,10 @@ Le projet BrokerX+ nécessite une architecture monolithique initiale qui doit é
 
 ## Validation
 Cette décision sera validée par :
-- [ ] Prototype fonctionnel avec séparation domaine/infrastructure
-- [ ] Tests unitaires du domaine sans dépendances infrastructure
+- [x] Prototype fonctionnel avec séparation domaine/infrastructure
+- [x] Tests unitaires du domaine sans dépendances infrastructure
+- [x] Publication d'une API REST v1 (Rails API) + ActionCable pour temps réel
+- [x] Contrat d'API documenté (OpenAPI 3.1) et Swagger UI
 
 ## Références
 - [LOG430 : Architecture Logicielle Architecture et Domain-Driven Design](https://ena.etsmtl.ca/pluginfile.php/2353589/mod_resource/content/3/ETS%20-%20LOG430%20-%20Architecture%20Logicielle%20-%202025_03%20-%20Cours%2004%20-%20Architecture%20et%20Domain-Driven%20Design.pdf)

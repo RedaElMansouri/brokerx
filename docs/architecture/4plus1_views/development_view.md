@@ -96,7 +96,6 @@ gem 'faker'
 gem 'shoulda-matchers'
 
 # Development
-gem 'rubocop', require: false
 gem 'annotate'
 
 # Monitoring (Phase 2)
@@ -140,6 +139,6 @@ spec/
 
 - **Debugging** : byebug, pry-rails
 
-- **Quality** : rubocop, reek, brakeman
+- **Qualité** : brakeman (optionnel : reek)
 
 - **Documentation** : yard, plantuml

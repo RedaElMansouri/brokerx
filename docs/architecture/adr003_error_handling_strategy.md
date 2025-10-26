@@ -1,13 +1,13 @@
 # ADR 003: Stratégie de gestion des erreurs
 
 ## Statut
-**Proposé** | **Date**: 2025-01-15 | **Décideurs**: Architecte logiciel
+**Approuvé** | **Date**: 2025-01-15 | **Décideurs**: Architecte logiciel
 
 ## Contexte
 Dans un système de trading, la gestion des erreurs est critique pour la fiabilité et l'auditabilité. Nous devons définir une stratégie cohérente pour la gestion des erreurs métier, techniques et d'infrastructure.
 
 ## Décision
-**Implémentation d'une hiérarchie d'erreurs structurée avec gestion centralisée** :
+**Implémentation d'une hiérarchie d'erreurs structurée avec gestion centralisée et enveloppe JSON normalisée** :
 
 ### Hiérarchie des erreurs :
 ```
@@ -27,9 +27,21 @@ BrokerError (base)
 
 ### Principes :
 1. **Erreurs métier explicites** : Chaque règle métier violée a son propre type d'erreur
-2. **No silent failures** : Toutes les erreurs sont journalisées
-3. **Graceful degradation** : Le système reste opérationnel malgré les erreurs partielles
-4. **Audit trail** : Toutes les erreurs sont tracées avec contexte
+2. **Enveloppe JSON standard** (réponses d'erreur):
+  - `{ "success": false, "code": "<slug>", "message": "<description>", "errors": ["detail1", ...] }`
+  - Le champ `code` est court et stable (p.ex. `version_conflict`, `invalid_state`, `not_found`).
+3. **No silent failures** : Toutes les erreurs sont journalisées (niveau adapté: warn/error)
+4. **Graceful degradation** : Le système reste opérationnel malgré les erreurs partielles
+5. **Audit trail** : Toutes les erreurs sont tracées avec contexte (corrélation si applicable)
+
+### Mappage des statuts HTTP (référence)
+- 400 Bad Request — paramètres manquants/mal formés
+- 401 Unauthorized — JWT invalide/absent
+- 403 Forbidden — accès refusé (ressource d'un autre compte)
+- 404 Not Found — ressource inexistante
+- 409 Conflict — verrou optimiste (p.ex. `version_conflict`)
+- 422 Unprocessable Entity — règle métier invalide (validation pré‑trade, état non valide)
+- 500 Internal Server Error — erreur technique non gérée
 
 ## Conséquences
 ### Positives
@@ -97,8 +109,10 @@ end -->
 **Inconvénients** : Moins idiomatique en Ruby, courbe d'apprentissage
 
 ## Validation
-Tous les use cases gèrent les erreurs métier
+- Contrôleurs API v1 retournent des enveloppes cohérentes (`success`, `code`, `message`/`errors`).
+- Journalisation des erreurs applicatives/techniques.
+- Tests d'intégration couvrant 401/403/404/409/422.
 
-Journalisation complète des erreurs
-
-Tests des scénarios d'erreur
+## Mise à jour (2025‑10‑25)
+- UC‑06 implémente `409 Conflict` pour les conflits de version (`version_conflict`).
+- UC‑03 retourne `201 Created` lors de la première exécution et `200 OK` pour le rejeu idempotent.

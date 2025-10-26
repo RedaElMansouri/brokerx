@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: BrokerX API
+  version: v1
+  description: |
+    API REST de BrokerX (Phase 2). Authentification via JWT Bearer pour les endpoints protégés.
+    - Audience: brokerx.web
+    - Issuer: brokerx
+    - Algorithme: HS256
+servers:
+  - url: /
+    description: Serveur courant
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Clé idempotente (pour POST /deposits)
+      required: false
+      schema:
+        type: string
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Unauthorized
+        code:
+          type: string
+          description: Code d'erreur éventuel
+        message:
+          type: string
+          description: Message d'erreur
+    ClientRegistrationRequest:
+      type: object
+      required: [client]
+      properties:
+        client:
+          type: object
+          required: [email, first_name, last_name, password]
+          properties:
+            email: { type: string, format: email }
+            first_name: { type: string }
+            last_name: { type: string }
+            password: { type: string, format: password }
+            date_of_birth: { type: string, format: date, nullable: true }
+            phone: { type: string, nullable: true }
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    VerifyMfaRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email: { type: string, format: email }
+        code: { type: string, description: Code MFA 6 chiffres }
+    DepositCreateRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, format: float, example: 100.0 }
+        currency: { type: string, example: USD }
+    DepositListItem:
+      type: object
+      properties:
+        id: { type: integer }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string, example: settled }
+        settled_at: { type: string, format: date-time, nullable: true }
+    PortfolioResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        account_id: { type: integer }
+        currency: { type: string, example: USD }
+        available_balance: { type: number }
+        reserved_balance: { type: number }
+        total_balance: { type: number }
+    OrderCreateRequest:
+      type: object
+      required: [order]
+      properties:
+        order:
+          type: object
+          required: [symbol, order_type, direction, quantity]
+          properties:
+            symbol: { type: string, example: AAPL }
+            order_type: { type: string, enum: [market, limit] }
+            direction: { type: string, enum: [buy, sell] }
+            quantity: { type: integer, minimum: 1 }
+            price: { type: number, nullable: true }
+            time_in_force: { type: string, example: DAY }
+            client_order_id: { type: string, description: Idempotence clé côté client (unique par compte), nullable: true }
+    OrderCreatedResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        order_id: { type: integer }
+        lock_version: { type: integer }
+        message: { type: string }
+    OrderShowResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        id: { type: integer }
+        account_id: { type: integer }
+        symbol: { type: string }
+        order_type: { type: string }
+        direction: { type: string }
+        quantity: { type: integer }
+        price: { type: number, nullable: true }
+        time_in_force: { type: string }
+        status: { type: string }
+        reserved_amount: { type: number }
+        lock_version: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OrderReplaceRequest:
+      type: object
+      required: [order]
+      properties:
+        order:
+          type: object
+          required: [client_version]
+          properties:
+            client_version: { type: integer }
+            quantity: { type: integer, nullable: true }
+            price: { type: number, nullable: true }
+            time_in_force: { type: string, nullable: true }
+    OrderCancelRequest:
+      type: object
+      required: [client_version]
+      properties:
+        client_version: { type: integer }
+paths:
+  /api/v1/clients/register:
+    post:
+      summary: Inscription client
+      tags: [Clients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRegistrationRequest'
+      responses:
+        '201':
+          description: Créé
+        '422':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /api/v1/clients/verify:
+    get:
+      summary: Vérification de compte
+      tags: [Clients]
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Compte activé }
+        '422':
+          description: Token invalide
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /api/v1/auth/login:
+    post:
+      summary: Étape 1 — connexion (MFA requis)
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthLoginRequest' }
+      responses:
+        '200': { description: MFA envoyé }
+        '401':
+          description: Identifiants incorrects
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  /api/v1/auth/verify_mfa:
+    post:
+      summary: Étape 2 — vérification MFA et émission du JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyMfaRequest' }
+      responses:
+        '200': { description: Token émis }
+        '401':
+          description: Code invalide/expiré
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  /api/v1/deposits:
+    post:
+      summary: Dépôt de fonds (idempotent)
+      tags: [Portefeuille]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepositCreateRequest' }
+      responses:
+        '201': { description: Dépôt créé }
+        '200': { description: Rejeu idempotent (aucune nouvelle écriture) }
+        '401': { description: Non autorisé, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '422': { description: Requête invalide, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    get:
+      summary: Lister les 20 derniers dépôts
+      tags: [Portefeuille]
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  deposits:
+                    type: array
+                    items: { $ref: '#/components/schemas/DepositListItem' }
+        '401': { description: Non autorisé }
+  /api/v1/portfolio:
+    get:
+      summary: Solde portefeuille
+      tags: [Portefeuille]
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PortfolioResponse' } } } }
+        '401': { description: Non autorisé }
+  /api/v1/orders:
+    post:
+      summary: Placement d'un ordre
+      tags: [Ordres]
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderCreateRequest' }
+      responses:
+        '200': { description: Accepté, content: { application/json: { schema: { $ref: '#/components/schemas/OrderCreatedResponse' } } } }
+        '401': { description: Non autorisé }
+        '422': { description: Validation échouée }
+  /api/v1/orders/{id}:
+    get:
+      summary: Récupérer un ordre
+      tags: [Ordres]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OrderShowResponse' } } } }
+        '401': { description: Non autorisé }
+        '403': { description: Interdit }
+        '404': { description: Introuvable }
+    delete:
+      summary: Annuler un ordre (DELETE)
+      tags: [Ordres]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Annulé }
+        '401': { description: Non autorisé }
+        '409': { description: Conflit de version }
+  /api/v1/orders/{id}/replace:
+    post:
+      summary: Modifier un ordre (optimistic locking)
+      tags: [Ordres]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderReplaceRequest' }
+      responses:
+        '200': { description: Modifié }
+        '401': { description: Non autorisé }
+        '409': { description: Conflit de version }
+        '422': { description: Validation échouée }
+  /api/v1/orders/{id}/cancel:
+    post:
+      summary: Annuler un ordre (avec client_version)
+      tags: [Ordres]
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderCancelRequest' }
+      responses:
+        '200': { description: Annulé }
+        '401': { description: Non autorisé }
+        '409': { description: Conflit de version }
+        '422': { description: Validation échouée }

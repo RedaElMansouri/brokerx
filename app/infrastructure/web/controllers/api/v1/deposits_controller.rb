@@ -17,9 +17,17 @@ module Api
         use_case = Application::UseCases::DepositFundsUseCase.new(portfolio_repository)
         result = use_case.execute(account_id: client_id, amount: amount, currency: currency, idempotency_key: idempo)
 
-        render json: { success: true, status: result[:status], transaction_id: result[:transaction_id] }
-      rescue StandardError => e
+        status_code = result[:reused] ? :ok : :created
+        render json: {
+          success: true,
+          status: result[:status],
+          transaction_id: result[:transaction_id],
+          balance_after: result[:balance_after]
+        }, status: status_code
+      rescue ArgumentError => e
         render json: { success: false, error: e.message }, status: :unprocessable_content
+      rescue StandardError => e
+        render json: { success: false, error: e.message }, status: :internal_server_error
       end
 
       def index

@@ -26,7 +26,16 @@ module Application
             existing = ::Infrastructure::Persistence::ActiveRecord::PortfolioTransactionRecord.find_by(
               account_id: account_id, idempotency_key: idempo
             )
-            return { status: existing.status, transaction_id: existing.id } if existing
+            if existing
+              # Return previous result without crediting twice
+              portfolio = @portfolio_repository.find_by_account_id(account_id)
+              return {
+                status: existing.status,
+                transaction_id: existing.id,
+                balance_after: portfolio&.available_balance&.amount.to_f,
+                reused: true
+              }
+            end
           end
 
           # Create pending transaction
@@ -50,7 +59,21 @@ module Application
           portfolio.credit(amount)
           @portfolio_repository.save(portfolio)
 
-          { status: 'settled', transaction_id: tx.id }
+          # Audit
+          Infrastructure::Persistence::ActiveRecord::AuditEventRecord.create!(
+            event_type: 'deposit.settled',
+            entity_type: 'PortfolioTransaction',
+            entity_id: tx.id,
+            account_id: account_id,
+            payload: { amount: amount, currency: currency, idempotency_key: idempo }
+          )
+
+          {
+            status: 'settled',
+            transaction_id: tx.id,
+            balance_after: portfolio.available_balance.amount.to_f,
+            reused: false
+          }
         end
       end
     end

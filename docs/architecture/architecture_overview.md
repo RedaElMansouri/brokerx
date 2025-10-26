@@ -37,9 +37,23 @@ Rails API Services Entities/VOs
 
 **Aucune dépendance inverse n'est permise** : Le domaine ne connaît pas l'application qui ne connaît pas l'infrastructure.
 
-## Technologies choisies
-- **Framework Web** : Ruby on Rails 7+ (API Mode)
-- **Base de données** : PostgreSQL 14+
-- **Testing** : RSpec, FactoryBot, Capybara
-- **Conteneurisation** : Docker, Docker Compose
-- **CI/CD** : GitHub Actions
+## Technologies choisies (implémentation actuelle)
+- Framework Web: Ruby on Rails 7.1 (API + ActionCable)
+- Auth: JWT (HS256, iss=brokerx, aud=brokerx.web)
+- Base de données: PostgreSQL 14+
+- Persistance: ActiveRecord + Repositories (ports/adapters)
+- Temps réel: ActionCable (WebSocket) + simulateur de marché en dev, fallback WS côté UI
+- Testing: Minitest + SimpleCov (garde de couverture configurable via CRITICAL_MIN_COVERAGE)
+- Conteneurisation: Docker, Docker Compose
+- CI/CD: GitHub Actions
+
+### Contrat d'API et documentation
+- Contrat OpenAPI 3.1 publié: `/openapi.yaml`
+- Swagger UI (statique) : `/swagger.html` (bouton Authorize → JWT Bearer)
+- CI: lint/validation automatique de `public/openapi.yaml` (échec pipeline si invalide)
+
+## Évolutions Phase 2 (résumé)
+- UC‑03: Dépôts idempotents via en-tête Idempotency-Key (index unique par compte)
+- UC‑04: Flux temps réel MarketChannel avec authentification JWT et composant UI sur la page Ordres
+- UC‑05: Placement d’ordres avec validations pré‑trade et réservation de fonds pour ACHAT
+- UC‑06: Modification/Annulation avec verrouillage optimiste (lock_version) et ajustement de `reserved_amount`

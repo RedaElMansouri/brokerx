@@ -1,0 +1,59 @@
+/* Styles scoped for Orders page components */
+
+/* Header */
+.fixed-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #234d20;
+    color: #f0f7da;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+.welcome { font-weight: 600; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.link-white { color: #f0f7da; text-decoration: none; }
+.link-white:hover { text-decoration: underline; }
+
+/* Buttons */
+.btn { display:inline-block; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-danger { background: #e53e3e; color: #fff; }
+.btn-slate { background: #475569; color: #fff; }
+.btn-blue { background: #2563eb; color: #fff; }
+.mr-1 { margin-right: 6px; }
+
+/* Market panel */
+.panel { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.panel-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+.muted { color: #64748b; }
+.status { margin-top: 4px; }
+.banner-degraded { display:none; background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 8px; margin-top: 8px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mt-2 { margin-top: 8px; }
+.mb-2 { margin-bottom: 8px; }
+
+.mono-box { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; min-height: 40px; }
+
+/* Form controls */
+.row { display:flex; align-items:center; gap: 8px; }
+.input, .select { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #0f172a; }
+.input:focus, .select:focus { outline: none; border-color: #77ab59; box-shadow: 0 0 0 3px rgba(119,171,89,0.25); }
+.input-narrow { width: 80px; }
+.input-price { width: 100px; }
+.flex-1 { flex:1; }
+.hint { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
+.text-error { color: #e53e3e; font-weight: 600; margin-left: 12px; }
+
+/* Orders table */
+.orders-section { margin-top: 16px; text-align: left; }
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+.table th, .table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.table th { background: #f8fafc; color: #334155; font-weight: 700; }

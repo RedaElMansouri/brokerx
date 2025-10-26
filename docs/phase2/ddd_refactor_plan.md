@@ -17,7 +17,7 @@ This document lists recommended move/delete actions to simplify navigation and p
 ## Nice-to-have follow-ups
 
 - Introduce mappers for AR <-> Domain conversion (keep in `app/infrastructure/persistence/mappers`).
-- Add RuboCop rules to forbid `ActiveRecord::Base` references in `app/domain` and `app/application`.
+- Establish a code review rule to forbid `ActiveRecord::Base` references in `app/domain` and `app/application` (and optionally a simple static check in CI).
 - Create `Application::Contracts` for request/response types if DTOs grow.
 
 ## Notes

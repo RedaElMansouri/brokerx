@@ -20,6 +20,7 @@ Prérequis : Docker Engine + Docker Compose v2 sur la VM, port 3000 ouvert, ac
 Notes :
 - Le `docker-compose.yml` fourni est orienté développement (montages, RAILS_ENV=development). Pour la production, créer un `docker-compose.prod.yml` avec `RAILS_ENV=production`, secrets, volumes et healthchecks adaptés.
 - L’endpoint de santé est disponible sur `/health`.
+- Documentation API (Swagger) locale : `http://localhost:3000/swagger.html` (utiliser « Authorize » pour saisir le JWT Bearer).
 # Runbook d’Exploitation — BrokerX+
 
 Ce runbook décrit comment déployer, exploiter et dépanner l’application BrokerX+ en local et sur une VM via Docker/Compose, avec intégration CI GitHub Actions.
@@ -67,6 +68,14 @@ docker compose logs -f web
 - Santé DB : `docker compose logs postgres`
 - (Phase 2) Prometheus : `http://localhost:9090/` ; Exporter : `http://localhost:3000/metrics`
 - (Phase 2) Grafana : `http://localhost:3001/`
+
+### Temps réel (ActionCable)
+- WebSocket: `/cable` (auth via `?token=JWT`)
+- En dev, la page Ordres utilise ActionCable si disponible, sinon un fallback WebSocket brut.
+- Symptômes & correctifs:
+  - Bloqué sur « initialisation »: CDN bloqué ou ActionCable non chargé → le fallback WS s’active automatiquement.
+  - « rejeté (JWT manquant/invalide) »: vérifier l’origin et le jeton (généré à l’auth); se connecter dans la même origine.
+  - Déconnexions fréquentes: vérifier l’onglet réseau WS, coupes réseau locales, ou throttling côté navigateur.
 
 ## 5. Base de données
 - Création/migration (dans le conteneur) :
@@ -143,14 +152,16 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bin/rails db:create
-          bin/rails db:migrate
+          bundle exec rails db:create
+          bundle exec rails db:migrate
 
       - name: Run tests
         env:
           RAILS_ENV: test
         run: |
-          bin/rails test
+          bundle exec rails test
+          # Pour exécuter un sous-ensemble en local sans bloquer sur la couverture :
+          # CRITICAL_MIN_COVERAGE=0 bundle exec rails test test/integration/uc06_order_modify_cancel_test.rb
 
       - name: Upload coverage (optionnel)
         if: always()

@@ -10,9 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_20_213000) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_25_221000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "audit_events", force: :cascade do |t|
+    t.datetime "occurred_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.bigint "actor_id"
+    t.bigint "account_id"
+    t.string "event_type", null: false
+    t.string "entity_type", null: false
+    t.bigint "entity_id"
+    t.jsonb "payload", default: {}, null: false
+    t.string "correlation_id"
+    t.index ["account_id", "occurred_at"], name: "index_audit_events_on_account_id_and_occurred_at"
+    t.index ["event_type", "occurred_at"], name: "index_audit_events_on_event_type_and_occurred_at"
+    t.index ["occurred_at"], name: "index_audit_events_on_occurred_at"
+  end
 
   create_table "clients", force: :cascade do |t|
     t.string "email", null: false
@@ -49,6 +63,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_20_213000) do
     t.decimal "reserved_amount", precision: 15, scale: 2, default: "0.0", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
+    t.string "client_order_id"
+    t.index ["account_id", "client_order_id"], name: "index_orders_on_account_and_client_order_id_unique", unique: true, where: "(client_order_id IS NOT NULL)"
     t.index ["account_id"], name: "index_orders_on_account_id"
     t.index ["status"], name: "index_orders_on_status"
     t.index ["symbol"], name: "index_orders_on_symbol"
@@ -98,4 +115,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_20_213000) do
     t.index ["symbol"], name: "index_trades_on_symbol"
   end
 
+  add_foreign_key "orders", "clients", column: "account_id"
+  add_foreign_key "portfolio_transactions", "clients", column: "account_id"
+  add_foreign_key "portfolios", "clients", column: "account_id"
+  add_foreign_key "trades", "clients", column: "account_id"
+  add_foreign_key "trades", "orders"
 end

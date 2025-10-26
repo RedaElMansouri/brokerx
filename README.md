@@ -14,14 +14,20 @@ Bienvenue sur BrokerX. Ce dépôt contient une API Rails 7 avec une architectur
 
 Voir `docs/operations/runbook.md` pour préparer l’environnement, exécuter les migrations et démarrer l’application.
 
+### Documentation API (Swagger)
+
+- Une spécification OpenAPI est publiée sous `public/openapi.yaml` et consultable via Swagger UI à l’URL suivante lorsque le serveur tourne:
+	- http://localhost:3000/swagger.html
+	- Bouton « Authorize » → saisir le JWT (Bearer) pour tester les endpoints protégés.
+
 ## CI/CD
 
 Ce dépôt inclut un unique workflow GitHub Actions pour l’intégration et la livraison continues :
 
 - CI/CD : `.github/workflows/ci-cd.yml`
-	- Lint : RuboCop
 	- Build : construction de l’image Docker (multi‑étages) et upload comme artefact
 	- Tests : unitaires/intégration/E2E (Rails test) avec publication du rapport de couverture
+	- Qualité API : lint/validation OpenAPI de `public/openapi.yaml` (la pipeline échoue si la spec est invalide)
 	- CD (via SSH) : lors d’un push (hors PR), déploie sur une VM en copiant le dépôt vers `/opt/brokerx`, en sauvegardant la version précédente puis en lançant `docker compose up -d --build`.
 		- Secrets requis : `SSH_HOST`, `SSH_USER`, `SSH_PASSWORD`.
 		- Prérequis côté VM : Docker Engine et Docker Compose v2 (`docker compose`). Port 3000 exposé.

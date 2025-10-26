@@ -160,3 +160,28 @@ CRUD complet sur les agrégats principaux
 Tests unitaires du domaine sans DB
 
 Tests d'intégration des repositories
+
+---
+
+## Mise à jour (2025‑10‑25)
+
+Dans le cadre de la Phase 2, nous avons consolidé l’intégrité :
+
+- Verrouillage optimiste sur `orders.lock_version` avec contrôle `client_version` côté API (UC‑06) et réponse `409 Conflict` en cas de conflit.
+- Réservation/libération des fonds via Repository Portefeuille et champ `orders.reserved_amount`.
+- Idempotence des dépôts (UC‑03) via contrainte unique partielle `(account_id, idempotency_key)` sur `portfolio_transactions`.
+- Indices ajoutés pour les chemins d’accès fréquents (orders.symbol/status, portfolios.account_id, etc.).
+
+Voir aussi :
+- `docs/architecture/persistence_integrity.md` pour le schéma ER, contraintes, transactions, seeds et roadmap.
+- `docs/architecture/adr004_audit_append_only.md` pour le journal d’audit append‑only.
+
+## Mise à jour (2025‑10‑25)
+
+Dans le cadre de la Phase 2, nous avons introduit :
+
+- `lock_version` sur la table `orders` pour activer le verrouillage optimiste (ActiveRecord) lors des opérations de remplacement/annulation (UC‑06). Les contrôleurs vérifient `client_version` (valeur côté client de `lock_version`) et retournent 409 en cas de conflit.
+- `reserved_amount` sur `orders` et méthodes `reserve_funds`/`release_funds` au niveau du Repository Portefeuille pour refléter l’engagement des fonds lors de la soumission d’un ordre d’achat et les ajustements lors d’un remplacement ou d’une annulation.
+- Idempotence sur les dépôts (UC‑03) via une contrainte unique `(account_id, idempotency_key)` sur `portfolio_transactions` (partielle lorsque l’ID est non nul).
+
+Ces choix renforcent la cohérence transactionnelle tout en conservant la séparation Domaine/Infrastructure.*** End Patch

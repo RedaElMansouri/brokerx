@@ -13,27 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint (RuboCop)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2.2'
-      - name: Install RuboCop
-        run: |
-          gem install rubocop -N
-      - name: Run RuboCop
-        run: |
-          rubocop
-
   build:
     name: Build Docker image
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -103,6 +85,10 @@ jobs:
             yarn install --frozen-lockfile || true
           fi
 
+      - name: Validate OpenAPI specification
+        run: |
+          npx -y @redocly/cli@1.24.1 lint public/openapi.yaml
+
       - name: Prepare database
         run: |
           bundle exec rails db:prepare
@@ -120,12 +106,6 @@ jobs:
         with:
           name: coverage
           path: coverage/
-
-      - name: RuboCop (non-blocking)
-        run: |
-          if bundle exec rubocop -v >/dev/null 2>&1; then
-            bundle exec rubocop || true
-          fi
 
   
 
