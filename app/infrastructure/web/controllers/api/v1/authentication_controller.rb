@@ -48,7 +48,7 @@ module Api
 
           # generate token
           token = Application::UseCases::AuthenticateUserUseCase.new(client_repository).send(:generate_jwt_token,
-                                                                                             record.id)
+                                                                                              record.id)
 
           render json: { success: true, token: token }
         else

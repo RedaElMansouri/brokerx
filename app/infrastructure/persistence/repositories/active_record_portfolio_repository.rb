@@ -36,12 +36,12 @@ module Infrastructure
             raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{portfolio_id}" unless record
 
             money_amount = if amount.is_a?(Domain::Clients::ValueObjects::Money)
-                             amount
-                           else
-                             Domain::Clients::ValueObjects::Money.new(
-                               amount, record.currency
-                             )
-                           end
+                              amount
+                            else
+                              Domain::Clients::ValueObjects::Money.new(
+                                amount, record.currency
+                              )
+                            end
 
             unless record.available_balance >= money_amount.amount
               raise Domain::Shared::Repository::Error, "Insufficient funds in portfolio: #{portfolio_id}"
@@ -60,12 +60,12 @@ module Infrastructure
             raise Domain::Shared::Repository::RecordNotFound, "Portfolio not found: #{portfolio_id}" unless record
 
             money_amount = if amount.is_a?(Domain::Clients::ValueObjects::Money)
-                             amount
-                           else
-                             Domain::Clients::ValueObjects::Money.new(
-                               amount, record.currency
-                             )
-                           end
+                              amount
+                            else
+                              Domain::Clients::ValueObjects::Money.new(
+                                amount, record.currency
+                              )
+                            end
 
             unless record.reserved_balance >= money_amount.amount
               raise Domain::Shared::Repository::Error, "Insufficient reserved funds in portfolio: #{portfolio_id}"

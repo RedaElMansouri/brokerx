@@ -87,7 +87,7 @@ jobs:
 
       - name: Validate OpenAPI specification
         run: |
-          npx -y @redocly/cli@1.24.1 lint public/openapi.yaml
+          npx -y @redocly/cli@latest lint public/openapi.yaml
 
       - name: Prepare database
         run: |
