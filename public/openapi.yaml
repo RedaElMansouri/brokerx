@@ -7,6 +7,9 @@ info:
     - Audience: brokerx.web
     - Issuer: brokerx
     - Algorithme: HS256
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: /
     description: Serveur courant
@@ -52,8 +55,8 @@ components:
             first_name: { type: string }
             last_name: { type: string }
             password: { type: string, format: password }
-            date_of_birth: { type: string, format: date, nullable: true }
-            phone: { type: string, nullable: true }
+            date_of_birth: { type: [string, 'null'], format: date }
+            phone: { type: [string, 'null'] }
     AuthLoginRequest:
       type: object
       required: [email, password]
@@ -79,7 +82,7 @@ components:
         amount: { type: number }
         currency: { type: string }
         status: { type: string, example: settled }
-        settled_at: { type: string, format: date-time, nullable: true }
+        settled_at: { type: [string, 'null'], format: date-time }
     PortfolioResponse:
       type: object
       properties:
@@ -101,9 +104,9 @@ components:
             order_type: { type: string, enum: [market, limit] }
             direction: { type: string, enum: [buy, sell] }
             quantity: { type: integer, minimum: 1 }
-            price: { type: number, nullable: true }
+            price: { type: [number, 'null'] }
             time_in_force: { type: string, example: DAY }
-            client_order_id: { type: string, description: Idempotence clé côté client (unique par compte), nullable: true }
+            client_order_id: { type: [string, 'null'], description: Idempotence clé côté client (unique par compte) }
     OrderCreatedResponse:
       type: object
       properties:
@@ -121,7 +124,7 @@ components:
         order_type: { type: string }
         direction: { type: string }
         quantity: { type: integer }
-        price: { type: number, nullable: true }
+        price: { type: [number, 'null'] }
         time_in_force: { type: string }
         status: { type: string }
         reserved_amount: { type: number }
@@ -137,9 +140,9 @@ components:
           required: [client_version]
           properties:
             client_version: { type: integer }
-            quantity: { type: integer, nullable: true }
-            price: { type: number, nullable: true }
-            time_in_force: { type: string, nullable: true }
+            quantity: { type: [integer, 'null'] }
+            price: { type: [number, 'null'] }
+            time_in_force: { type: [string, 'null'] }
     OrderCancelRequest:
       type: object
       required: [client_version]
@@ -150,6 +153,7 @@ paths:
     post:
       summary: Inscription client
       tags: [Clients]
+      security: []
       requestBody:
         required: true
         content:
@@ -168,6 +172,7 @@ paths:
     get:
       summary: Vérification de compte
       tags: [Clients]
+      security: []
       parameters:
         - name: token
           in: query
@@ -184,6 +189,7 @@ paths:
     post:
       summary: Étape 1 — connexion (MFA requis)
       tags: [Auth]
+      security: []
       requestBody:
         required: true
         content:
@@ -198,6 +204,7 @@ paths:
     post:
       summary: Étape 2 — vérification MFA et émission du JWT
       tags: [Auth]
+      security: []
       requestBody:
         required: true
         content:
