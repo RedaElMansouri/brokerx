@@ -38,6 +38,8 @@ Le Client accède à la page de connexion et saisit ses identifiants.
    - Compare le hash du mot de passe
    - Vérifie que le compte est actif
 
+
+> Diagramme UML (séquence): `docs/use_cases/puml/UC02_authentification_mfa.puml`
 4. **Système** applique les contrôles de sécurité :
    - Vérification réputation IP (optionnel)
    - Détection de brute force (limite tentatives)

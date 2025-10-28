@@ -1,0 +1,22 @@
+@startuml UC01_inscription_verification
+actor Client
+participant "Kong" as Kong
+participant "API Rails (web)" as Web
+database "PostgreSQL" as PG
+
+== Inscription ==
+Client -> Kong: POST /api/v1/clients/register
+Kong -> Web: proxy request
+Web -> PG: create ClientRecord + PortfolioRecord
+PG --> Web: created ids
+Web --> Kong: 201 Created (verify_token)
+Kong --> Client: 201 + lien de vérification
+
+== Vérification ==
+Client -> Kong: GET /api/v1/clients/verify?token=XYZ
+Kong -> Web: proxy request
+Web -> PG: mark verified=true
+PG --> Web: ok
+Web --> Kong: 200 OK
+Kong --> Client: 200 OK (compte vérifié)
+@enduml

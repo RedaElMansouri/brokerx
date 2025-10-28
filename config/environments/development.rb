@@ -72,6 +72,11 @@ Rails.application.configure do
   # Allow Prometheus (running in Docker) to scrape using host.docker.internal
   # and make HostAuthorization ignore the /metrics endpoint entirely in development.
   config.hosts << "host.docker.internal"
+  # Allow service-to-service calls inside Docker network via Kong which forwards
+  # the upstream service name as Host by default (preserve_host=false).
+  %w[orders-a orders-b portfolios reporting kong].each do |h|
+    config.hosts << h
+  end
   config.host_authorization = {
     exclude: ->(req) { req.path == "/metrics" }
   }

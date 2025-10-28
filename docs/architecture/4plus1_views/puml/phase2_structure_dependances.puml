@@ -1,0 +1,70 @@
+@startuml phase2_structure_dependances
+skinparam componentStyle rectangle
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+package "Gateway" {
+    [Kong (DB-less)] as kong
+}
+
+package "Microservices" {
+    [Orders A] as ordersA
+    [Orders B] as ordersB
+    [Portfolios] as portfolios
+    [Reporting] as reporting
+}
+
+package "Observability" {
+    [Prometheus] as prom
+    [Grafana] as grafana
+}
+
+node "Data" {
+    [PostgreSQL] as pg
+}
+
+kong --> ordersA : route /api/v1/orders
+kong --> ordersB : route /api/v1/orders
+kong --> portfolios : route /api/v1/portfolios
+kong --> reporting : route /api/v1/reporting
+
+ordersA --> pg
+ordersB --> pg
+portfolios --> pg
+reporting --> pg
+
+prom --> kong : scrape /metrics
+prom --> ordersA : scrape /metrics
+prom --> ordersB : scrape /metrics
+prom --> portfolios : scrape /metrics
+prom --> reporting : scrape /metrics
+
+grafana --> prom : datasource
+
+rectangle "Rails (DDD)" {
+    [Domaine] as domain
+    [Application] as app
+    [Infrastructure] as infra
+}
+
+ordersA -down-> infra
+ordersB -down-> infra
+portfolios -down-> infra
+infra -down-> app
+app -down-> domain
+
+note right of kong
+- CORS
+- Key-Auth
+- JWT passthrough
+- Prometheus plugin
+end note
+
+note right of prom
+Jobs:
+- kong
+- orders-a / orders-b
+- portfolios / reporting
+end note
+
+@enduml

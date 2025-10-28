@@ -24,7 +24,7 @@ module Api
 
         render json: { success: true, mfa_required: true, message: 'MFA code sent to your email' }
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :unauthorized
+        render_api_error(code: 'unauthorized', message: e.message, status: :unauthorized)
       end
 
       # Step 2: verify MFA code and return JWT
@@ -32,12 +32,12 @@ module Api
         email = params[:email].to_s.strip.downcase
         code = params[:code].to_s.strip
 
-        record = ::Infrastructure::Persistence::ActiveRecord::ClientRecord.find_by(email: email)
-        return render(json: { success: false, error: 'Invalid email or code' }, status: :unauthorized) unless record
+  record = ::Infrastructure::Persistence::ActiveRecord::ClientRecord.find_by(email: email)
+  return render_api_error(code: 'unauthorized', message: 'Invalid email or code', status: :unauthorized) unless record
 
         # throttle attempts and check code expiry (10 minutes)
         if record.last_mfa_attempt_at && record.last_mfa_attempt_at > 1.minute.ago && record.mfa_attempts >= 5
-          return render json: { success: false, error: 'Too many attempts. Try later.' }, status: :too_many_requests
+          return render_api_error(code: 'too_many_requests', message: 'Too many attempts. Try later.', status: :too_many_requests)
         end
 
         record.update_columns(mfa_attempts: (record.mfa_attempts || 0) + 1, last_mfa_attempt_at: Time.current)
@@ -52,10 +52,10 @@ module Api
 
           render json: { success: true, token: token }
         else
-          render json: { success: false, error: 'Invalid or expired MFA code' }, status: :unauthorized
+          render_api_error(code: 'unauthorized', message: 'Invalid or expired MFA code', status: :unauthorized)
         end
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :internal_server_error
+        render_api_error(code: 'internal_error', message: e.message, status: :internal_server_error)
       end
 
       private

@@ -6,3 +6,17 @@ scrape_configs:
     static_configs:
       - targets: ['host.docker.internal:3000']
     metrics_path: /metrics
+
+  - job_name: 'brokerx-microservices'
+    static_configs:
+      - targets:
+          - 'orders-a:3000'
+          - 'orders-b:3000'
+          - 'portfolios:3000'
+          - 'reporting:3000'
+    metrics_path: /metrics
+
+  - job_name: 'kong'
+    static_configs:
+      - targets: ['kong:8001']
+    metrics_path: /metrics

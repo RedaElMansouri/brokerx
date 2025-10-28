@@ -1,5 +1,7 @@
 # UC-03 — Dépôt de fonds (idempotent)
 
+> Diagramme UML (séquence): `docs/use_cases/puml/UC03_depot_fonds_idempotent.puml`
+
 ## Métadonnées
 - Identifiant: UC-03
 - Version: 1.0

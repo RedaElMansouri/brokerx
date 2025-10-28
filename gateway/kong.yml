@@ -1,0 +1,95 @@
+_format_version: "3.0"
+_transform: true
+
+plugins:
+  # Enable global Prometheus metrics
+  - name: prometheus
+    # Ensure HTTP status/latency series are exported so Grafana can show
+    # requests by service and upstream latency panels
+    config:
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+
+services:
+  # Orders service with two targets for LB
+  - name: orders
+    url: http://orders-upstream
+    routes:
+      - name: orders-routes
+        paths:
+          - /api/v1/orders
+          - /api/v1/orders/
+          - /api/v1/orders/\d+
+          - /api/v1/orders/\d+/replace
+          - /api/v1/orders/\d+/cancel
+        strip_path: false
+        methods: [GET, POST, DELETE]
+    plugins:
+      - name: key-auth
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: [GET, POST, DELETE, OPTIONS]
+          headers: ["Authorization", "Content-Type", "apikey", "Idempotency-Key"]
+          credentials: true
+
+  # Portfolios & Deposits service
+  - name: portfolios
+    url: http://portfolios:3000
+    routes:
+      - name: portfolios-routes
+        paths:
+          - /api/v1/portfolio
+          - /api/v1/deposits
+          - /api/v1/deposits/
+        strip_path: false
+        methods: [GET, POST]
+    plugins:
+      - name: key-auth
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: [GET, POST, OPTIONS]
+          headers: ["Authorization", "Content-Type", "apikey", "Idempotency-Key"]
+          credentials: true
+      - name: proxy-cache
+        config:
+          strategy: memory
+          cache_ttl: 10
+          response_code: [200]
+          request_method: ["GET"]
+          content_type: ["application/json"]
+          vary_headers: ["authorization", "apikey"]
+
+  # Reporting (placeholder)
+  - name: reporting
+    url: http://reporting:3000
+    routes:
+      - name: reporting-routes
+        paths:
+          - /api/v1/reports
+        strip_path: false
+        methods: [GET]
+    plugins:
+      - name: key-auth
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: [GET, OPTIONS]
+          headers: ["Authorization", "Content-Type", "apikey"]
+          credentials: true
+
+upstreams:
+  - name: orders-upstream
+    targets:
+      - target: orders-a:3000
+        weight: 100
+      - target: orders-b:3000
+        weight: 100
+
+consumers:
+  - username: demo
+    keyauth_credentials:
+      - key: brokerx-key-123

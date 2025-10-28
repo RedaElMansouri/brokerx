@@ -1,0 +1,27 @@
+@startuml UC05_placement_ordre
+actor Client
+participant "Kong" as Kong
+participant "Orders (API)" as Orders
+participant "Portfolios" as Portfolios
+database "PostgreSQL" as PG
+control "MatchingEngine" as ME
+
+== Soumission ==
+Client -> Kong: POST /api/v1/orders (Authorization: Bearer)
+Kong -> Orders: proxy
+Orders -> Portfolios: reserve_funds(amount) [ACHAT]
+Portfolios -> PG: lock portfolio; update balances
+PG --> Portfolios: ok
+Orders -> PG: insert Order(status=new, reserved_amount)
+PG --> Orders: order_id, lock_version
+Orders -> ME: enqueue(order_id)
+ME --> Orders: ack queued
+Orders --> Kong: 200 OK {order_id, lock_version}
+Kong --> Client: 200 OK (ACK)
+
+== Appariment (asynchro) ==
+ME -> PG: read opposing orders; match
+ME -> Portfolios: commit/release funds
+Portfolios -> PG: update balances
+PG --> Portfolios: ok
+@enduml

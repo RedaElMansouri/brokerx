@@ -8,7 +8,7 @@ module Api
         # Dépôt de fonds idempotent sur le portefeuille du client
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+  return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         amount = params[:amount].to_f
         currency = (params[:currency] || 'USD').to_s
@@ -25,16 +25,16 @@ module Api
           balance_after: result[:balance_after]
         }, status: status_code
       rescue ArgumentError => e
-        render json: { success: false, error: e.message }, status: :unprocessable_content
+        render_api_error(code: 'validation_failed', message: e.message, status: :unprocessable_entity)
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :internal_server_error
+        render_api_error(code: 'internal_error', message: e.message, status: :internal_server_error)
       end
 
       def index
         # Liste des dépôts récents (limités) pour le client authentifié
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+  return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         txs = ::Infrastructure::Persistence::ActiveRecord::PortfolioTransactionRecord
               .where(account_id: client_id, operation_type: 'deposit')
@@ -45,7 +45,7 @@ module Api
           { id: t.id, amount: t.amount, currency: t.currency, status: t.status, settled_at: t.settled_at }
         end }
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :internal_server_error
+        render_api_error(code: 'internal_error', message: e.message, status: :internal_server_error)
       end
 
       private

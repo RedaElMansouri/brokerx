@@ -1,0 +1,22 @@
+@startuml UC03_depot_fonds_idempotent
+actor Client
+participant "Kong" as Kong
+participant "Portfolios" as Portfolios
+database "PostgreSQL" as PG
+
+== Dépôt avec Idempotency-Key ==
+Client -> Kong: POST /api/v1/deposits (Authorization: Bearer, Idempotency-Key)
+Kong -> Portfolios: proxy
+Portfolios -> PG: begin transaction
+Portfolios -> PG: upsert Deposit(idem_key)
+PG --> Portfolios: created/duplicate
+alt première soumission
+    Portfolios -> PG: update PortfolioRecord.balance += amount
+    PG --> Portfolios: ok
+    Portfolios --> Kong: 201 Created (deposit_id)
+    Kong --> Client: 201 Created
+else répétition (même Idempotency-Key)
+    Portfolios --> Kong: 200 OK (previous result)
+    Kong --> Client: 200 OK (idempotent)
+end
+@enduml

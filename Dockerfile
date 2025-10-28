@@ -28,7 +28,7 @@ FROM base AS builder
 COPY Gemfile Gemfile.lock ./
 RUN bundle config set force_ruby_platform true && \
     bundle install && \
-    bundle clean
+    bundle clean --force
 
 COPY . .
 
@@ -43,7 +43,10 @@ RUN apt-get update -qq && \
 
 ENV RAILS_ENV=production \
     RACK_ENV=production \
-    RAILS_LOG_TO_STDOUT=true
+    RAILS_LOG_TO_STDOUT=true \
+    BUNDLE_WITHOUT=development:test \
+    BUNDLE_JOBS=4 \
+    BUNDLE_RETRY=3
 
 WORKDIR /app
 

@@ -1,5 +1,7 @@
 # UC-06 Modifier / Annuler un ordre
 
+> Diagramme UML (séquence): `docs/use_cases/puml/UC06_modifier_annuler_ordre.puml`
+
 Ce cas d'usage permet au client de modifier un ordre en cours (prix, quantité, TIF) et d'annuler un ordre non finalisé. Le verrouillage optimiste via `lock_version` évite les conflits concurrentiels.
 
 ## Endpoints

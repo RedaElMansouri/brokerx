@@ -1,0 +1,116 @@
+{
+    "annotations": { "list": [] },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "panels": [
+    {
+        "type": "stat",
+        "title": "Gateway RPS (req/s)",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+    { "expr": "sum(rate(kong_http_requests_total[1m]))", "legendFormat": "rps" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Requests by service (rate)",
+        "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+        "targets": [
+    { "expr": "sum by (service)(rate(kong_http_requests_total{code=~\"2..\"}[1m]))", "legendFormat": "2xx {{service}}" },
+    { "expr": "sum by (service)(rate(kong_http_requests_total{code=~\"4..\"}[1m]))", "legendFormat": "4xx {{service}}" },
+    { "expr": "sum by (service)(rate(kong_http_requests_total{code=~\"5..\"}[1m]))", "legendFormat": "5xx {{service}}" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Upstream latency p95 by service (s)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [
+    { "expr": "histogram_quantile(0.95, sum by (le, service)(rate(kong_upstream_latency_ms_bucket[5m]))) / 1000", "legendFormat": "upstream p95 {{service}}" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Gateway added latency p95 (s)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "targets": [
+    { "expr": "histogram_quantile(0.95, sum by (le, service)(rate(kong_kong_latency_ms_bucket[5m]))) / 1000", "legendFormat": "kong p95 {{service}}" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "End-to-end request latency p95 (s)",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+        "targets": [
+    { "expr": "histogram_quantile(0.95, sum by (le, service)(rate(kong_request_latency_ms_bucket[5m]))) / 1000", "legendFormat": "req p95 {{service}}" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Bandwidth by service (bytes/s)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+        "targets": [
+    { "expr": "sum by (service, direction)(rate(kong_bandwidth_bytes[1m]))", "legendFormat": "{{direction}} {{service}}" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Active connections",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+        "targets": [
+        { "expr": "kong_nginx_connections_total{state=\"active\"}", "legendFormat": "active" },
+        { "expr": "kong_nginx_connections_total{state=\"writing\"}", "legendFormat": "writing" },
+        { "expr": "kong_nginx_connections_total{state=\"waiting\"}", "legendFormat": "waiting" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Gateway requests (rate)",
+        "gridPos": { "h": 6, "w": 12, "x": 0, "y": 28 },
+        "targets": [
+    { "expr": "sum(rate(kong_http_requests_total[1m]))", "legendFormat": "gateway rps" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Datastore reachable",
+        "gridPos": { "h": 6, "w": 6, "x": 12, "y": 28 },
+        "targets": [
+        { "expr": "kong_datastore_reachable", "legendFormat": "reachable" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Prometheus plugin errors",
+        "gridPos": { "h": 6, "w": 6, "x": 18, "y": 28 },
+        "targets": [
+        { "expr": "rate(kong_nginx_metric_errors_total[5m])", "legendFormat": "errors/s" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Lua VM memory (bytes)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
+        "targets": [
+        { "expr": "sum(kong_memory_workers_lua_vms_bytes)", "legendFormat": "lua vm" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Shared dict usage (bytes)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
+        "targets": [
+        { "expr": "sum by (shared_dict)(kong_memory_lua_shared_dict_bytes)", "legendFormat": "{{shared_dict}} bytes" }
+        ]
+    }
+    ],
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["brokerx", "kong"],
+    "templating": { "list": [] },
+    "time": { "from": "now-15m", "to": "now" },
+    "timezone": "browser",
+    "title": "Kong / Gateway",
+    "version": 1
+}

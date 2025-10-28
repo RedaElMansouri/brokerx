@@ -77,6 +77,38 @@ docker compose logs -f web
   - « rejeté (JWT manquant/invalide) »: vérifier l’origin et le jeton (généré à l’auth); se connecter dans la même origine.
   - Déconnexions fréquentes: vérifier l’onglet réseau WS, coupes réseau locales, ou throttling côté navigateur.
 
+## 4bis. Génération de charge (k6 via Docker)
+Pour alimenter les tableaux de bord et valider les SLIs en démo.
+
+- Via Gateway (Kong) :
+```bash
+docker run --rm --network brokerx_default -v "$PWD":/scripts -w /scripts grafana/k6 \
+  run load/k6/gateway_smoke.js \
+  -e BASE_URL=http://kong:8080 -e APIKEY=brokerx-key-123 -e TOKEN=<JWT> \
+  -e VUS=5 -e DURATION=45s
+```
+
+- Direct vers microservices :
+```bash
+docker run --rm --network brokerx_default -v "$PWD":/scripts -w /scripts grafana/k6 \
+  run load/k6/direct_microservices_smoke.js \
+  -e PORTFOLIOS_URL=http://portfolios:3000 -e ORDERS_URL=http://orders-a:3000 \
+  -e TOKEN=<JWT> -e VUS=5 -e DURATION=45s
+```
+
+- ActionCable (maintenir des connexions WS pendant les captures) :
+```bash
+docker run --rm --name k6-ws --network brokerx_default -v "$PWD":/scripts -w /scripts grafana/k6 \
+  run load/k6/cable_connect.js \
+  -e WS_URL=ws://portfolios:3000/cable -e TOKEN=<JWT> -e VUS=5 -e DURATION=5m -e WS_HOLD_MS=290000
+```
+
+### JWT (génération dans un conteneur service)
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gateway.yml exec portfolios \
+  bundle exec rails runner "rec=Infrastructure::Persistence::ActiveRecord::ClientRecord.find_by(email: 'demo@brokerx.local'); puts Application::UseCases::AuthenticateUserUseCase.new(Infrastructure::Persistence::Repositories::ActiveRecordClientRepository.new).send(:generate_jwt_token, rec.id)"
+```
+
 ## 5. Base de données
 - Création/migration (dans le conteneur) :
 ```bash

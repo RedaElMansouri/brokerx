@@ -42,7 +42,8 @@ Rails.application.configure do
   # config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # Make this configurable for local Docker usage behind Kong (HTTP).
+  config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
 
   # Log to STDOUT by default
   config.logger = ActiveSupport::Logger.new(STDOUT)
@@ -81,10 +82,23 @@ Rails.application.configure do
   config.active_record.dump_schema_after_migration = false
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # Allow internal service names when running inside Docker/Kong network.
+  config.hosts ||= []
+  %w[orders-a orders-b portfolios reporting kong host.docker.internal localhost 127.0.0.1].each do |h|
+    config.hosts << h
+  end
+  # Skip DNS rebinding protection for Prometheus metrics scraping and health.
+  config.host_authorization = {
+    exclude: ->(request) { ["/metrics", "/health"].include?(request.path) }
+  }
+
+  # ActionCable configuration for containerized setup
+  # Allow WS connections from host and local origins when testing locally
+  config.action_cable.mount_path = "/cable"
+  config.action_cable.disable_request_forgery_protection = true
+  config.action_cable.allowed_request_origins = [
+    /\Ahttp:\/\/localhost:\d+\z/,
+    /\Ahttp:\/\/127\.0\.0\.1:\d+\z/,
+    /\Ahttp:\/\/host\.docker\.internal:\d+\z/
+  ]
 end

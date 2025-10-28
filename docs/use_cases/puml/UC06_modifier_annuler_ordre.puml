@@ -1,0 +1,31 @@
+@startuml UC06_modifier_annuler_ordre
+actor Client
+participant "Kong" as Kong
+participant "Orders (API)" as Orders
+database "PostgreSQL" as PG
+participant "Portfolios" as Portfolios
+
+== Modifier ==
+Client -> Kong: POST /api/v1/orders/{id}/replace (If-Match: lock_version)
+Kong -> Orders: proxy
+Orders -> PG: select order for update
+Orders -> PG: update (new params, lock_version++)
+PG --> Orders: ok
+Orders --> Kong: 200 OK (new lock_version)
+Kong --> Client: 200 OK
+
+== Annuler ==
+Client -> Kong: POST /api/v1/orders/{id}/cancel (If-Match: lock_version)
+Kong -> Orders: proxy
+Orders -> PG: update status=canceled (optimistic lock)
+PG --> Orders: ok
+Orders -> Portfolios: release reserved funds (si ACHAT)
+Portfolios -> PG: update balances
+PG --> Portfolios: ok
+Orders --> Kong: 200 OK
+Kong --> Client: 200 OK
+
+== Conflits (optimistic lock) ==
+Orders --> Kong: 409 Conflict (lock_version mismatch)
+Kong --> Client: 409 Conflict
+@enduml

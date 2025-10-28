@@ -10,8 +10,7 @@ module Api
           begin
             dto_attrs[:date_of_birth] = Date.parse(dto_attrs[:date_of_birth])
           rescue ArgumentError
-            return render json: { success: false, error: 'Invalid date_of_birth format' },
-                          status: :unprocessable_content
+            return render_api_error(code: 'validation_failed', message: 'Invalid date_of_birth format', status: :unprocessable_entity)
           end
         end
 
@@ -45,17 +44,14 @@ module Api
         }, status: :created
       rescue StandardError => e
         logger.error "Registration error: #{e.message}\n#{e.backtrace.join("\n")}"
-        render json: {
-          success: false,
-          error: e.message
-        }, status: :unprocessable_content
+        render_api_error(code: 'internal_error', message: e.message, status: :unprocessable_entity)
       end
 
       def verify
         # Activation de compte via token de vérification
 
-        client = client_repository.find_by_verification_token(params[:token])
-        raise 'Invalid verification token' unless client
+  client = client_repository.find_by_verification_token(params[:token])
+  raise 'Invalid verification token' unless client
 
         client.activate!(params[:token])
         client_repository.save(client)
@@ -66,10 +62,7 @@ module Api
         }
       rescue StandardError => e
         logger.error "Verification error: #{e.message}"
-        render json: {
-          success: false,
-          error: e.message
-        }, status: :unprocessable_content
+        render_api_error(code: 'validation_failed', message: e.message, status: :unprocessable_entity)
       end
 
       private

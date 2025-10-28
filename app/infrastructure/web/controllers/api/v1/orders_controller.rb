@@ -8,13 +8,13 @@ module Api
         # Place un ordre (validation + éventuelle réservation de fonds) avec idempotence optionnelle
 
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
-        client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+    client_id = token_to_client_id(token)
+    return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         begin
           p = order_params
         rescue ActionController::ParameterMissing => e
-          return render json: { success: false, code: 'bad_request', message: e.message }, status: :bad_request
+          return render_api_error(code: 'bad_request', message: e.message, status: :bad_request)
         end
         client_order_id = p[:client_order_id].presence
         dto = Application::Dtos::PlaceOrderDto.new(
@@ -27,9 +27,9 @@ module Api
           time_in_force: p[:time_in_force] || 'DAY'
         )
 
-        validation_service = Application::Services::OrderValidationService.new(portfolio_repository)
-        errors = validation_service.validate_pre_trade(dto, client_id)
-  return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
+    validation_service = Application::Services::OrderValidationService.new(portfolio_repository)
+    errors = validation_service.validate_pre_trade(dto, client_id)
+    return render json: { success: false, code: 'validation_failed', message: 'Validation errors', details: errors }, status: :unprocessable_entity unless errors.empty?
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         created_order = nil
@@ -48,7 +48,7 @@ module Api
               portfolio_repository.reserve_funds(portfolio_for_client(client_id).id,
               validation_service.send(:calculate_order_cost, dto))
             rescue StandardError => e
-              return render json: { success: false, error: e.message }, status: :unprocessable_content
+              return render_api_error(code: 'funds_reserve_failed', message: e.message, status: :unprocessable_entity)
             end
           end
 
@@ -92,23 +92,21 @@ module Api
       def show
         # Récupérer un ordre si l'utilisateur est propriétaire
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
-        client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+    client_id = token_to_client_id(token)
+    return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         begin
           order = repo.find(params[:id])
         rescue ActiveRecord::RecordNotFound
-          return render(json: { success: false, code: 'not_found', message: 'Not found' }, status: :not_found)
+          return render_api_error(code: 'not_found', message: 'Not found', status: :not_found)
         end
         unless order
-          return render(json: { success: false, code: 'not_found', message: 'Not found' },
-                        status: :not_found)
+          return render_api_error(code: 'not_found', message: 'Not found', status: :not_found)
         end
 
         unless order.account_id == client_id
-          return render(json: { success: false, code: 'forbidden', message: 'Forbidden' },
-                        status: :forbidden)
+          return render_api_error(code: 'forbidden', message: 'Forbidden', status: :forbidden)
         end
 
         render json: {
@@ -132,25 +130,22 @@ module Api
       def destroy
         # Annuler un ordre non finalisé et libérer les fonds réservés
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
-        client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+    client_id = token_to_client_id(token)
+    return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         order = repo.find(params[:id])
         unless order
-          return render(json: { success: false, code: 'not_found', message: 'Not found' },
-                        status: :not_found)
+          return render_api_error(code: 'not_found', message: 'Not found', status: :not_found)
         end
 
         unless order.account_id == client_id
-          return render(json: { success: false, error: 'Forbidden' },
-                        status: :forbidden)
+          return render_api_error(code: 'forbidden', message: 'Forbidden', status: :forbidden)
         end
 
         # Only cancel if not already terminal
         if %w[filled cancelled].include?(order.status)
-          return render json: { success: false, code: 'invalid_state', message: 'Order already finalized' },
-                        status: :unprocessable_content
+          return render_api_error(code: 'invalid_state', message: 'Order already finalized', status: :unprocessable_entity)
         end
 
         # If it was a buy with reserved funds, release them
@@ -159,8 +154,7 @@ module Api
             pf = portfolio_for_client(client_id)
             portfolio_repository.release_funds(pf.id, order.reserved_amount)
           rescue StandardError => e
-            return render json: { success: false, code: 'funds_release_failed', message: "Failed to release funds: #{e.message}" },
-                          status: :internal_server_error
+            return render_api_error(code: 'funds_release_failed', message: "Failed to release funds: #{e.message}", status: :internal_server_error)
           end
         end
 
@@ -172,38 +166,38 @@ module Api
       # UC-06: modifier un ordre (remplacement) avec verrouillage optimiste
       def replace
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
-        client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+    client_id = token_to_client_id(token)
+    return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         begin
           p = replace_params
         rescue ActionController::ParameterMissing => e
-          return render json: { success: false, code: 'bad_request', message: e.message }, status: :bad_request
+          return render_api_error(code: 'bad_request', message: e.message, status: :bad_request)
         end
 
         client_version = p[:client_version]
         unless client_version
-          return render json: { success: false, code: 'missing_version', message: 'client_version is required' }, status: :bad_request
+          return render_api_error(code: 'missing_version', message: 'client_version is required', status: :bad_request)
         end
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         begin
           order = repo.find(params[:id])
         rescue ::ActiveRecord::RecordNotFound
-          return render(json: { success: false, code: 'not_found', message: 'Not found' }, status: :not_found)
+          return render_api_error(code: 'not_found', message: 'Not found', status: :not_found)
         end
 
         unless order.account_id == client_id
-          return render(json: { success: false, code: 'forbidden', message: 'Forbidden' }, status: :forbidden)
+          return render_api_error(code: 'forbidden', message: 'Forbidden', status: :forbidden)
         end
 
         if %w[filled cancelled].include?(order.status)
-          return render json: { success: false, code: 'invalid_state', message: 'Order already finalized' }, status: :unprocessable_content
+          return render_api_error(code: 'invalid_state', message: 'Order already finalized', status: :unprocessable_entity)
         end
 
         # Vérifier la version optimiste
         if order.lock_version.to_i != client_version.to_i
-          return render json: { success: false, code: 'version_conflict', message: 'Order has been modified by another process' }, status: :conflict
+          return render_api_error(code: 'version_conflict', message: 'Order has been modified by another process', status: :conflict)
         end
 
         # Calcul des nouveaux attributs
@@ -222,13 +216,13 @@ module Api
           time_in_force: new_tif
         )
         validation_service = Application::Services::OrderValidationService.new(portfolio_repository)
-        errors = validation_service.validate_pre_trade(dto, client_id)
-  return render json: { success: false, errors: errors }, status: :unprocessable_content unless errors.empty?
+    errors = validation_service.validate_pre_trade(dto, client_id)
+    return render json: { success: false, code: 'validation_failed', message: 'Validation errors', details: errors }, status: :unprocessable_entity unless errors.empty?
 
         # Ajuster les fonds + mise à jour atomiques
         ::ActiveRecord::Base.transaction do
           # Ajuster les fonds réservés si achat
-          if order.direction == 'buy'
+          if dto.direction == 'buy'
             old_reserved = order.reserved_amount.to_f
             new_cost = validation_service.send(:calculate_order_cost, dto)
             delta = new_cost.to_f - old_reserved
@@ -237,13 +231,13 @@ module Api
               begin
                 portfolio_repository.reserve_funds(pf.id, delta)
               rescue StandardError => e
-                return render json: { success: false, code: 'funds_reserve_failed', message: "Failed to reserve additional funds: #{e.message}" }, status: :unprocessable_content
+                return render_api_error(code: 'funds_reserve_failed', message: "Failed to reserve additional funds: #{e.message}", status: :unprocessable_entity)
               end
             elsif delta < 0
               begin
                 portfolio_repository.release_funds(pf.id, -delta)
               rescue StandardError => e
-                return render json: { success: false, code: 'funds_release_failed', message: "Failed to release funds: #{e.message}" }, status: :internal_server_error
+                return render_api_error(code: 'funds_release_failed', message: "Failed to release funds: #{e.message}", status: :internal_server_error)
               end
             end
             order.reserved_amount = new_cost
@@ -255,9 +249,9 @@ module Api
             order.assign_attributes(quantity: new_quantity, price: new_price, time_in_force: new_tif)
             order.save!
           rescue ::ActiveRecord::StaleObjectError
-            return render json: { success: false, code: 'version_conflict', message: 'Order has been modified by another process' }, status: :conflict
+            return render_api_error(code: 'version_conflict', message: 'Order has been modified by another process', status: :conflict)
           rescue ::ActiveRecord::RecordInvalid => e
-            return render json: { success: false, code: 'validation_failed', message: e.record.errors.full_messages.join(', ') }, status: :unprocessable_content
+            return render_api_error(code: 'validation_failed', message: e.record.errors.full_messages.join(', '), status: :unprocessable_entity)
           end
 
           # Audit
@@ -287,31 +281,31 @@ module Api
       def cancel
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+  return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         p = params.permit(:client_version)
         client_version = p[:client_version]
         unless client_version
-          return render json: { success: false, code: 'missing_version', message: 'client_version is required' }, status: :bad_request
+          return render_api_error(code: 'missing_version', message: 'client_version is required', status: :bad_request)
         end
 
         repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
         begin
           order = repo.find(params[:id])
         rescue ::ActiveRecord::RecordNotFound
-          return render(json: { success: false, code: 'not_found', message: 'Not found' }, status: :not_found)
+          return render_api_error(code: 'not_found', message: 'Not found', status: :not_found)
         end
 
         unless order.account_id == client_id
-          return render(json: { success: false, code: 'forbidden', message: 'Forbidden' }, status: :forbidden)
+          return render_api_error(code: 'forbidden', message: 'Forbidden', status: :forbidden)
         end
 
         if %w[filled cancelled].include?(order.status)
-          return render json: { success: false, code: 'invalid_state', message: 'Order already finalized' }, status: :unprocessable_content
+          return render_api_error(code: 'invalid_state', message: 'Order already finalized', status: :unprocessable_entity)
         end
 
         if order.lock_version.to_i != client_version.to_i
-          return render json: { success: false, code: 'version_conflict', message: 'Order has been modified by another process' }, status: :conflict
+          return render_api_error(code: 'version_conflict', message: 'Order has been modified by another process', status: :conflict)
         end
 
         ::ActiveRecord::Base.transaction do
@@ -320,7 +314,7 @@ module Api
             begin
               portfolio_repository.release_funds(pf.id, order.reserved_amount)
             rescue StandardError => e
-              return render json: { success: false, code: 'funds_release_failed', message: "Failed to release funds: #{e.message}" }, status: :internal_server_error
+              return render_api_error(code: 'funds_release_failed', message: "Failed to release funds: #{e.message}", status: :internal_server_error)
             end
           end
 
@@ -328,7 +322,7 @@ module Api
             order.lock_version = client_version.to_i
             order.update!(status: 'cancelled')
           rescue ::ActiveRecord::StaleObjectError
-            return render json: { success: false, code: 'version_conflict', message: 'Order has been modified by another process' }, status: :conflict
+            return render_api_error(code: 'version_conflict', message: 'Order has been modified by another process', status: :conflict)
           end
 
           # Audit

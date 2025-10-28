@@ -6,10 +6,10 @@ module Api
       def show
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
-        return render(json: { success: false, error: 'Unauthorized' }, status: :unauthorized) unless client_id
+  return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
 
         portfolio = portfolio_repository.find_by_account_id(client_id)
-        return render(json: { success: false, error: 'Portfolio not found' }, status: :not_found) unless portfolio
+  return render_api_error(code: 'not_found', message: 'Portfolio not found', status: :not_found) unless portfolio
 
         render json: {
           success: true,
@@ -20,7 +20,7 @@ module Api
           total_balance: portfolio.total_balance.amount
         }
       rescue StandardError => e
-        render json: { success: false, error: e.message }, status: :internal_server_error
+        render_api_error(code: 'internal_error', message: e.message, status: :internal_server_error)
       end
 
       private

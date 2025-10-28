@@ -29,6 +29,9 @@ Rails.application.routes.draw do
   get '/orders', to: 'orders#index'
   get '/portfolio', to: 'portfolios#show'
 
+  # ActionCable WebSocket endpoint
+  mount ActionCable.server => '/cable'
+
   # Catch-all 404
   match '*path', to: 'application#route_not_found', via: :all
 end

@@ -1,0 +1,17 @@
+@startuml UC04_donnees_marche_temps_reel
+actor Client
+participant "Portfolios (ActionCable)" as Cable
+participant "API Rails (web)" as Web
+
+== Connexion WS ==
+Client -> Cable: WS CONNECT /cable?token=JWT
+Cable --> Client: 101 Switching Protocols
+
+== Abonnement ==
+Client -> Cable: subscribe channel: MarketChannel / OrdersChannel
+Cable --> Client: confirm subscription
+
+== Diffusion ==
+Web -> Cable: broadcast(order_update/trade)
+Cable --> Client: message(JSON)
+@enduml

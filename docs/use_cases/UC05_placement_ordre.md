@@ -1,5 +1,7 @@
 # UC-05 - Placement d'un ordre (marché/limite) avec contrôles pré-trade
 
+> Diagramme UML (séquence): `docs/use_cases/puml/UC05_placement_ordre.puml`
+
 ## Métadonnées
 - **Identifiant**: UC-05
 - **Version**: 1.0

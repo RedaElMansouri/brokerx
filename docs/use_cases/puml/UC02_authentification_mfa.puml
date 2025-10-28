@@ -1,0 +1,22 @@
+@startuml UC02_authentification_mfa
+actor Client
+participant "Kong" as Kong
+participant "API Rails (web)" as Web
+database "PostgreSQL" as PG
+
+== Login (étape 1) ==
+Client -> Kong: POST /api/v1/auth/login (email+pwd)
+Kong -> Web: proxy
+Web -> PG: find client + verify pwd (prototype)
+PG --> Web: ok
+Web --> Kong: 200 OK (mfa_required=true)
+Kong --> Client: code MFA envoyé (email)
+
+== Vérification MFA (étape 2) ==
+Client -> Kong: POST /api/v1/auth/verify_mfa (code)
+Kong -> Web: proxy
+Web -> PG: verify mfa code
+PG --> Web: ok
+Web --> Kong: 200 OK (JWT HS256)
+Kong --> Client: JWT (Authorization: Bearer)
+@enduml

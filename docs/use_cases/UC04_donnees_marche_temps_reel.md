@@ -1,5 +1,7 @@
 # UC-04 — Données de marché en temps réel (ActionCable)
 
+> Diagramme UML (séquence): `docs/use_cases/puml/UC04_donnees_marche_temps_reel.puml`
+
 ## Métadonnées
 - Identifiant: UC-04
 - Version: 1.0
