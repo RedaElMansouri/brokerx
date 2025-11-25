@@ -1,0 +1,99 @@
+@startuml trading_saga_sequence
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title UC-07: TradingSaga - Flux d'exécution avec compensation
+
+actor Client
+participant "OrdersController" as Controller
+participant "TradingSaga" as Saga
+participant "PortfolioRepository" as Portfolio
+participant "OrderRepository" as Order
+participant "MatchingEngine" as Matching
+database "PostgreSQL" as DB
+queue "Outbox" as Outbox
+
+== Flux Principal (Succès) ==
+
+Client -> Controller: POST /api/v1/orders
+activate Controller
+
+Controller -> Saga: execute(dto, client_id)
+activate Saga
+
+note over Saga: saga.started event
+
+Saga -> Saga: Step 1: validate_order
+note right: Vérifie symbole,\nquantité, fonds
+
+Saga -> Portfolio: reserve_funds(amount)
+activate Portfolio
+Portfolio -> DB: UPDATE portfolios\nSET reserved += amount
+Portfolio --> Saga: success
+deactivate Portfolio
+note over Saga: saga.step.completed
+
+Saga -> Order: create(order_dto)
+activate Order
+Order -> DB: INSERT orders
+Order -> Outbox: INSERT order.created
+Order --> Saga: order
+deactivate Order
+note over Saga: saga.step.completed
+
+Saga -> Matching: enqueue_order(order)
+activate Matching
+Matching --> Saga: success
+deactivate Matching
+note over Saga: saga.step.completed
+
+note over Saga #90EE90: saga.completed
+
+Saga --> Controller: SagaResult(success: true)
+deactivate Saga
+
+Controller --> Client: 200 OK {order_id, status}
+deactivate Controller
+
+== Flux Alternatif (Échec + Compensation) ==
+
+Client -> Controller: POST /api/v1/orders
+activate Controller
+
+Controller -> Saga: execute(dto, client_id)
+activate Saga
+
+Saga -> Portfolio: reserve_funds(amount)
+Portfolio --> Saga: success
+
+Saga -> Order: create(order_dto)
+Order --> Saga: success
+
+Saga -> Matching: enqueue_order(order)
+Matching --> Saga: ❌ FAILURE
+note over Saga #FFB6C1: saga.step.failed
+
+note over Saga: saga.compensating
+
+Saga -> Order: cancel(order)
+activate Order
+Order -> DB: UPDATE orders SET status='cancelled'
+Order --> Saga: done
+deactivate Order
+
+Saga -> Portfolio: release_funds(amount)
+activate Portfolio
+Portfolio -> DB: UPDATE portfolios\nSET reserved -= amount
+Portfolio --> Saga: done
+deactivate Portfolio
+
+note over Saga #FFB6C1: saga.failed
+
+Saga --> Controller: SagaResult(success: false, compensated: true)
+deactivate Saga
+
+Controller --> Client: 422 Unprocessable Entity
+deactivate Controller
+
+@enduml

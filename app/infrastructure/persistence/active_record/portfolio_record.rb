@@ -9,6 +9,7 @@ module Infrastructure
         validates :available_balance, :reserved_balance, numericality: { greater_than_or_equal_to: 0 }
 
         before_save :validate_balances
+        after_commit :invalidate_cache!
 
         private
 
@@ -17,6 +18,14 @@ module Infrastructure
             errors.add(:base, "Balances cannot be negative")
             throw :abort
           end
+        end
+
+        def invalidate_cache!
+          # Remove cached portfolio after any change (create/update) to ensure freshness
+          key = "portfolio:#{account_id}:v1"
+          Rails.cache.delete(key)
+        rescue => e
+          Rails.logger.warn("[Cache] failed to invalidate #{key}: #{e.class}: #{e.message}")
         end
       end
     end

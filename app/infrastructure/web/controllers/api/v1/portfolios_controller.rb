@@ -7,18 +7,34 @@ module Api
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
   return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id
+        # Support cache bypass with header: Cache-Control: no-cache
+        bypass = request.headers['Cache-Control']&.downcase&.include?('no-cache')
+        cache_key = "portfolio:#{client_id}:v1"
+        data = nil
+        hit = false
 
-        portfolio = portfolio_repository.find_by_account_id(client_id)
-  return render_api_error(code: 'not_found', message: 'Portfolio not found', status: :not_found) unless portfolio
+        unless bypass
+          data = Rails.cache.read(cache_key)
+          hit = !data.nil?
+          Infrastructure::Observability::Metrics.inc_counter('cache_portfolio_total', { status: hit ? 'hit' : 'miss' }) if defined?(Infrastructure::Observability::Metrics)
+        end
 
-        render json: {
-          success: true,
-          account_id: portfolio.account_id,
-          currency: portfolio.currency,
-          available_balance: portfolio.available_balance.amount,
-          reserved_balance: portfolio.reserved_balance.amount,
-          total_balance: portfolio.total_balance.amount
-        }
+        unless data
+          portfolio = portfolio_repository.find_by_account_id(client_id)
+    return render_api_error(code: 'not_found', message: 'Portfolio not found', status: :not_found) unless portfolio
+          data = {
+            success: true,
+            account_id: portfolio.account_id,
+            currency: portfolio.currency,
+            available_balance: portfolio.available_balance.amount,
+            reserved_balance: portfolio.reserved_balance.amount,
+            total_balance: portfolio.total_balance.amount
+          }
+          Rails.cache.write(cache_key, data, expires_in: 60.seconds) unless bypass
+        end
+
+        response.set_header('X-Cache', hit ? 'HIT' : 'MISS')
+        render json: data
       rescue StandardError => e
         render_api_error(code: 'internal_error', message: e.message, status: :internal_server_error)
       end

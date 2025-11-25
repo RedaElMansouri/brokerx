@@ -1,0 +1,8 @@
+<h2>Confirmation d'exécution</h2>
+<p>Ordre <strong>#<%= @order_id %></strong> mis à jour.</p>
+<ul>
+  <li>Status: <%= @status %></li>
+  <li>Quantité: <%= @quantity %></li>
+  <% if @price %><li>Prix: <%= sprintf('%.4f', @price) %></li><% end %>
+</ul>
+<p>Merci d'utiliser BrokerX.</p>

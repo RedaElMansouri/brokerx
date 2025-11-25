@@ -1,0 +1,40 @@
+@startuml UC08_confirmation_execution_notifications
+title UC-08 Confirmation d'exécution & Notifications
+
+actor Client
+participant "MatchingEngine" as ME
+database "PostgreSQL" as PG
+participant "OutboxEvents" as Outbox
+participant "OutboxDispatcher" as Disp
+participant "ActionCable" as Cable
+participant "ExecutionReportMailer" as Mailer
+
+== Génération de l'execution.report ==
+ME -> PG: UPDATE Order status (filled|working)
+ME -> PG: INSERT OutboxEvent(type=execution.report, status=pending, payload)
+
+== Dispatch ==
+Disp -> Outbox: SELECT pending execution.report
+Disp -> PG: UPDATE OutboxEvent status=processing
+Disp -> Cable: broadcast {execution.report}
+alt Broadcast échoue
+    Disp -> Disp: log warning
+end
+Disp -> Mailer: deliver_later(execution_report)
+alt Mail échoue
+    Disp -> Disp: log warning
+end
+Disp -> PG: UPDATE OutboxEvent status=processed
+
+== Consommation UI ==
+Client <- Cable: push execution.report
+note over Client
+Met à jour affichage ordre
+end note
+
+legend left
+Partial fills non implémentés (futur: plusieurs execution.report)
+Fallback mail si websocket non reçu
+end legend
+
+@enduml

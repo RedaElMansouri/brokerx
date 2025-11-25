@@ -17,17 +17,29 @@ Rails.application.configure do
   # Enable server timing
   config.server_timing = true
 
-  # Enable/disable caching. By default caching is disabled.
-  # Run rails dev:cache to toggle caching.
-  if Rails.root.join("tmp/caching-dev.txt").exist?
+  # Caching configuration
+  # Priority order:
+  # 1. If REDIS_URL is present, use Redis (and always enable controller caching)
+  # 2. Else if dev caching toggle file exists, use in-memory store
+  # 3. Else fall back to null store (disabled)
+  redis_url = ENV['REDIS_URL']
+  if redis_url.present?
+    config.cache_store = :redis_cache_store, {
+      url: redis_url,
+      error_handler: ->(method:, _returning:, exception:) {
+        Rails.logger.warn("RedisCacheStore error in #{method}: #{exception.class}: #{exception.message}")
+      }
+    }
+    config.action_controller.perform_caching = true
+  elsif Rails.root.join("tmp/caching-dev.txt").exist?
     config.cache_store = :memory_store
     config.public_file_server.headers = {
       "Cache-Control" => "public, max-age=#{2.days.to_i}"
     }
+    config.action_controller.perform_caching = true
   else
-    config.action_controller.perform_caching = false
-
     config.cache_store = :null_store
+    config.action_controller.perform_caching = false
   end
 
   # Store uploaded files on the local file system (see config/storage.yml for options).

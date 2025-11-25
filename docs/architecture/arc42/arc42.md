@@ -206,18 +206,45 @@ end
 ```
 
 ## 9. Décisions architecturales (ADRs)
-- Les ADRs seront consolidés sous `docs/architecture/adr/` (≥ 3 attendus):
-  - Style architectural (Monolithe → REST → Microservices + Gateway)
-  - Persistance & transactions (ORM/AR, Repositories, idempotency)
-  - Stratégie d’erreurs & versionnage d’API
-  - Conformité & audit (journal append-only, traces)
 
-  Format cible pour ADRs (exemple d’entête):
+Les ADRs sont consolidés sous `docs/architecture/`:
+
+| ADR | Titre | Statut |
+|-----|-------|--------|
+| [ADR-001](../adr001_style_architectural.md) | Style architectural (Monolithe → REST → Microservices) | Approuvé |
+| [ADR-002](../adr002_persistence_strategy.md) | Stratégie de persistance (Repository Pattern) | Approuvé |
+| [ADR-003](../adr003_error_handling_strategy.md) | Stratégie de gestion des erreurs | Approuvé |
+| [ADR-004](../adr004_audit_append_only.md) | Audit append-only | Approuvé |
+| [ADR-005](../adr005_kong_gateway.md) | Kong API Gateway | Approuvé |
+| [ADR-006](../adr006_prometheus_grafana.md) | Prometheus & Grafana pour l'observabilité | Approuvé |
+| [ADR-007](../adr007_actioncable_ws.md) | ActionCable pour WebSockets | Approuvé |
+| [ADR-008](../adr008_redis_cache.md) | **Redis pour le cache distribué** | Approuvé |
+| [ADR-009](../adr009_load_balancing.md) | **Nginx Load Balancing** | Approuvé |
+| [ADR-010](../adr010_saga_pattern.md) | **Saga Pattern pour transactions distribuées** | Approuvé |
+
+### Nouveaux ADRs (Phase 2)
+
+#### ADR-008: Redis Cache
+- **Contexte**: Besoin de cache partagé entre instances pour le load balancing
+- **Décision**: Redis 7 comme cache distribué et session store
+- **Conséquences**: Cache partagé, sessions persistantes, support pub/sub pour ActionCable
+
+#### ADR-009: Load Balancing Nginx
+- **Contexte**: Haute disponibilité et scalabilité horizontale requises
+- **Décision**: Nginx avec algorithme `least_conn` devant 3 instances web
+- **Conséquences**: Distribution ~33% par instance, zéro downtime possible
+
+#### ADR-010: Saga Pattern
+- **Contexte**: Transactions de trading multi-étapes avec besoin de compensation
+- **Décision**: TradingSaga orchestrateur avec 4 étapes et compensations automatiques
+- **Conséquences**: Cohérence garantie, traçabilité via événements saga.*
+
+  Format ADR standardisé:
 
   ```markdown
-  # ADR-0001: Style architectural (Monolithe → REST → Microservices + Gateway)
-  Status: Proposed | Accepted | Superseded
-  Date: 2025-09-28
+  # ADR-00X: Titre
+  Status: Proposed | Approved | Superseded
+  Date: YYYY-MM-DD
   Contexte, Décision, Conséquences, Alternatives
   ```
 
@@ -229,11 +256,46 @@ end
   - Erreurs 5xx < 1%; CPU < 75% P95
 - Sécurité: tokens TTL/rotation, CORS strict, validation stricte des entrées
 
-Tableau d’objectifs (exemple minimal):
+Tableau d'objectifs (exemple minimal):
 
 ```text
 P95 Auth < 200 ms | P95 Order < 300 ms | 5xx < 1% | CPU P95 < 75%
 ```
+
+### Tests de charge k6
+
+Les tests de charge sont implémentés avec [k6](https://k6.io/) dans `load/k6/`:
+
+| Script | Description | Utilisation |
+|--------|-------------|-------------|
+| `load.js` | Test de charge soutenue (50 VUs, 5 min) | Validation baseline performance |
+| `stress.js` | Test de stress (0→500 VUs) | Identification des limites |
+| `lb_test.js` | Vérification distribution LB | Validation ~33% par instance |
+
+#### Exécution des tests
+
+```bash
+# Test de charge soutenue
+k6 run load/k6/load.js
+
+# Test de stress progressif
+k6 run load/k6/stress.js
+
+# Vérification load balancing
+docker compose -f docker-compose.lb.yml up -d
+k6 run load/k6/lb_test.js
+```
+
+#### Résultats typiques (lb_test.js)
+
+```
+Instance Distribution:
+- web-1 (172.x.x.4): 1213 hits (33.2%)
+- web-2 (172.x.x.5): 1270 hits (34.7%)
+- web-3 (172.x.x.6): 1310 hits (35.8%)
+```
+
+Documentation complète: `load/k6/README.md`
 
 ### Note de statut (tests & couverture)
 
@@ -250,8 +312,18 @@ P95 Auth < 200 ms | P95 Order < 300 ms | 5xx < 1% | CPU P95 < 75%
 - Double définition AR (`ClientRecord`) → "superclass mismatch" (corriger en supprimant le doublon)
 - Absence de vérification de mot de passe (prototype) → durcir auth
 - Tests & couverture limités → ajouter tests repo/e2e + SimpleCov
-- Observabilité incomplète → mettre en place Prometheus/Grafana au plus tôt
+- ~~Observabilité incomplète~~ → **Résolu**: Prometheus/Grafana + métriques saga.*
 - Migration microservices: complexité de découpage, cohérence transactionnelle, données partagées
+
+### Améliorations Phase 2 implémentées
+
+| Amélioration | Statut | Détails |
+|--------------|--------|---------|
+| Redis cache distribué | Implémenté | `docker-compose.yml`, `cache_store.rb` |
+| Load balancing Nginx | Implémenté | `docker-compose.lb.yml`, 3 instances |
+| Saga Pattern | Implémenté | `TradingSaga` avec compensations |
+| Tests de charge k6 | Implémenté | `load/k6/*.js` |
+| ADRs documentés | Implémenté | ADR 008, 009, 010 |
 
 Lien vers suivi des dettes: `docs/phase2/plan.md` (sections Observabilité & Microservices)
 

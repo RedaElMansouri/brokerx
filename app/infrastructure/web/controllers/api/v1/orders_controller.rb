@@ -31,9 +31,10 @@ module Api
     errors = validation_service.validate_pre_trade(dto, client_id)
     return render json: { success: false, code: 'validation_failed', message: 'Validation errors', details: errors }, status: :unprocessable_entity unless errors.empty?
 
-        repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
-        created_order = nil
-        ::ActiveRecord::Base.transaction do
+  repo = Infrastructure::Persistence::Repositories::ActiveRecordOrderRepository.new
+  created_order = nil
+  correlation_id = request.headers['X-Correlation-Id'].presence || SecureRandom.uuid
+  ::ActiveRecord::Base.transaction do
           # Idempotence côté order
           if client_order_id
             existing = Infrastructure::Persistence::ActiveRecord::OrderRecord.find_by(account_id: client_id, client_order_id: client_order_id)
@@ -80,13 +81,33 @@ module Api
             account_id: client_id,
             payload: { symbol: created_order.symbol, type: created_order.order_type, direction: created_order.direction, qty: created_order.quantity, price: created_order.price, reserved_amount: created_order.reserved_amount, client_order_id: created_order.client_order_id }
           )
+
+          # Outbox: publier un événement order.created dans la même transaction
+          Infrastructure::Persistence::ActiveRecord::OutboxEventRecord.create!(
+            event_type: 'order.created',
+            status: 'pending',
+            correlation_id: correlation_id,
+            entity_type: 'Order',
+            entity_id: created_order.id,
+            payload: {
+              symbol: created_order.symbol,
+              order_type: created_order.order_type,
+              direction: created_order.direction,
+              quantity: created_order.quantity,
+              price: created_order.price,
+              time_in_force: created_order.time_in_force,
+              account_id: created_order.account_id,
+              client_order_id: created_order.client_order_id
+            },
+            produced_at: Time.now.utc
+          )
         end
 
-        # Envoyer à l'engine de matching (simple, en mémoire)
-        Application::Services::MatchingEngine.instance.enqueue_order(dto.to_h.merge(order_id: created_order.id))
+        # Ne plus pousser directement au moteur: l'outbox le déclenchera
 
         Infrastructure::Observability::Metrics.inc_counter('orders_accepted_total', { symbol: created_order.symbol, side: created_order.direction })
-        render json: { success: true, order_id: created_order.id, lock_version: created_order.lock_version, message: 'Order accepted and queued for matching' }
+        response.set_header('X-Correlation-Id', correlation_id)
+        render json: { success: true, order_id: created_order.id, lock_version: created_order.lock_version, correlation_id: correlation_id, message: 'Order accepted and queued (outbox)' }
       end
 
       def show

@@ -20,6 +20,10 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./config/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./config/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docs/observability/grafana:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     restart: unless-stopped

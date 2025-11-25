@@ -1,0 +1,63 @@
+@startuml observability_stack
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title Stack Observabilité - BrokerX Phase 2
+
+package "Application Layer" {
+    component "web-1" as web1
+    component "web-2" as web2
+    component "web-3" as web3
+    component "Kong Gateway" as kong
+    
+    web1 -[hidden]- web2
+    web2 -[hidden]- web3
+}
+
+package "Metrics Endpoints" {
+    portin "/metrics" as metrics1
+    portin "/metrics" as metrics2
+    portin "/metrics" as metrics3
+    portin ":8001/metrics" as kongmetrics
+}
+
+web1 --> metrics1
+web2 --> metrics2
+web3 --> metrics3
+kong --> kongmetrics
+
+package "Observability Stack" #LightYellow {
+    component "Prometheus\n:9090" as prom #Orange
+    component "Grafana\n:3001" as grafana #Green
+    
+    note right of prom
+        Scrape interval: 15s
+        Targets:
+        - web-1:3000/metrics
+        - web-2:3000/metrics
+        - web-3:3000/metrics
+        - kong:8001/metrics
+    end note
+}
+
+metrics1 --> prom : scrape
+metrics2 --> prom : scrape
+metrics3 --> prom : scrape
+kongmetrics --> prom : scrape
+
+prom --> grafana : data source
+
+package "Dashboards Grafana" {
+    card "Golden Signals" as golden
+    card "Gateway/Kong" as gw
+    card "Trading Saga" as sagadash
+}
+
+grafana --> golden
+grafana --> gw
+grafana --> sagadash
+
+actor "DevOps" as devops
+devops --> grafana : visualize
+
+@enduml

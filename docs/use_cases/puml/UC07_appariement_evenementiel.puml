@@ -1,0 +1,71 @@
+@startuml UC07_appariement_evenementiel
+title UC-07 Appariement Event-Driven (Outbox + Dispatcher)
+
+actor Client
+participant "Kong Gateway" as Kong
+participant "Orders API" as Orders
+database "PostgreSQL" as PG
+participant "OutboxEvents (table)" as Outbox
+participant "OutboxDispatcher" as Disp
+participant "MatchingEngine" as ME
+participant "ActionCable" as Cable
+participant "Consommateurs (Reporting/Notifications/Saga)" as Consumer
+
+== 1. Création de l'ordre ==
+Client -> Kong: POST /api/v1/orders (JWT, optional Correlation-Id)
+Kong -> Orders: proxy request
+Orders -> PG: BEGIN TX
+Orders -> PG: INSERT Order(status=new)
+Orders -> PG: INSERT AuditEvent(order.created)
+Orders -> PG: INSERT OutboxEvent(type=order.created, status=pending)
+Orders -> PG: COMMIT
+Orders --> Kong: 200 (order_id, correlation_id)
+Kong --> Client: 200 OK
+
+== 2. Dispatch asynchrone ==
+Disp -> Outbox: SELECT pending order.created LIMIT N
+loop pour chaque événement
+    Disp -> PG: UPDATE OutboxEvent status=processing
+    Disp -> ME: enqueue(order metadata)
+end
+
+== 3. Appariement ==
+ME -> PG: LOAD Order(status=new)
+alt Pas de contrepartie
+    ME -> PG: UPDATE Order status=working
+    ME -> PG: INSERT OutboxEvent(type=execution.report, status=pending, payload=working)
+    ME -> Cable: broadcast top_of_book
+else Contrepartie trouvée
+    ME -> PG: UPDATE Orders status=filled (2x)
+    ME -> PG: INSERT Trades (2x)
+    ME -> PG: INSERT OutboxEvent(type=execution.report, status=pending, payload=filled) (2x)
+    ME -> Cable: broadcast trade + top_of_book
+end
+
+== 4. Finalisation dispatch ==
+Disp -> PG: UPDATE OutboxEvent(order.created) status=processed
+
+== 5. Consommation ultérieure ==
+Outbox --> Consumer: execution.report disponible (future pull)
+note over Consumer
+Services futurs consommeront les events execution.report
+via polling ou remplacement par broker (Kafka, etc.)
+end note
+
+note right of ME
+Métriques clés:
+orders_enqueued_total
+orders_matched_total
+trades_executed_total
+outbox_events_total{type,status}
+outbox_inflight
+matching_queue_size
+end note
+
+legend left
+Tous les INSERT OutboxEvent sont dans des transactions atomiques
+Le dispatcher est un thread de polling simple
+Correlation-Id propagé dans payload (non illustré dans chaque message)
+end legend
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml load_balancing_architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title Architecture Load Balancing - BrokerX Phase 2
+
+cloud "Clients" as clients {
+    actor "Browser/App" as browser
+    actor "k6 Load Test" as k6
+}
+
+package "Load Balancer" {
+    component "Nginx\n(least_conn)" as nginx #LightBlue
+    note right of nginx
+        Port 80
+        Health checks
+        WebSocket support
+    end note
+}
+
+package "Web Instances" {
+    component "web-1\n:3000" as web1 #LightGreen
+    component "web-2\n:3000" as web2 #LightGreen
+    component "web-3\n:3000" as web3 #LightGreen
+}
+
+package "Shared Services" {
+    database "PostgreSQL\n:5432" as postgres #Orange
+    database "Redis\n:6379" as redis #Red
+}
+
+browser --> nginx : HTTP/WS
+k6 --> nginx : HTTP
+
+nginx --> web1 : ~33%
+nginx --> web2 : ~33%
+nginx --> web3 : ~34%
+
+web1 --> postgres
+web2 --> postgres
+web3 --> postgres
+
+web1 --> redis : cache + sessions
+web2 --> redis : cache + sessions
+web3 --> redis : cache + sessions
+
+note bottom of redis
+    - Cache partagé
+    - Sessions ActionCable
+    - Pub/Sub notifications
+end note
+
+@enduml

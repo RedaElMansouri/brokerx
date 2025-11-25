@@ -28,6 +28,7 @@ gem 'annotate'
 
 # Monitoring
 gem 'lograge'
+gem 'redis', '~> 5.2'
 
 group :development do
   gem 'listen', '~> 3.3'

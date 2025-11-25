@@ -20,6 +20,18 @@ services:
       timeout: 5s
       retries: 5
 
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Application Rails
   web:
     build: .
@@ -30,16 +42,21 @@ services:
       DATABASE_USERNAME: brokerx
       DATABASE_PASSWORD: password
       RAILS_ENV: development
+      REDIS_URL: redis://redis:6379/1
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - .:/app
       - bundle_data:/usr/local/bundle
+    # Use db:prepare to create DB if missing and run migrations (idempotent).
     command: >
       sh -c "
         bundle install &&
-        bundle exec rails db:setup &&
+        bundle exec rails db:prepare &&
+        rm -f tmp/pids/server.pid && \
         bundle exec rails server -b 0.0.0.0 -p 3000
       "
     healthcheck:

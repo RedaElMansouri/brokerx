@@ -1,0 +1,69 @@
+@startuml outbox_event_flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title UC-07/UC-08: Flux Outbox Pattern
+
+participant "Controller" as ctrl
+participant "TradingSaga" as saga
+database "PostgreSQL" as db
+entity "OutboxDispatcher\n(polling)" as dispatcher
+participant "MatchingEngine" as matching
+participant "ActionCable" as cable
+actor "Client WS" as client
+
+== Phase 1: Création ordre + événement (même transaction) ==
+
+ctrl -> saga: execute()
+activate saga
+
+saga -> db: BEGIN TRANSACTION
+saga -> db: INSERT order (status=new)
+saga -> db: INSERT outbox_event\n(type=order.created, status=pending)
+saga -> db: COMMIT
+note right: Atomicité garantie
+
+saga --> ctrl: order_id
+deactivate saga
+
+== Phase 2: Dispatch événement ==
+
+dispatcher -> db: SELECT * FROM outbox_events\nWHERE status='pending'\nLIMIT 100
+activate dispatcher
+
+dispatcher -> db: UPDATE status='processing'
+
+dispatcher -> matching: enqueue_order(payload)
+activate matching
+
+matching -> matching: cherche contrepartie
+matching -> db: INSERT outbox_event\n(type=execution.report)
+
+alt Match trouvé
+    matching -> db: UPDATE orders\nSET status='filled'
+    matching --> dispatcher: trade executed
+else Pas de match
+    matching -> db: UPDATE orders\nSET status='working'
+    matching --> dispatcher: order working
+end
+
+deactivate matching
+
+dispatcher -> db: UPDATE outbox_event\nSET status='processed'
+deactivate dispatcher
+
+== Phase 3: Notification temps réel (UC-08) ==
+
+dispatcher -> db: SELECT execution.report\nWHERE status='pending'
+activate dispatcher
+
+dispatcher -> cable: broadcast(order_status)
+activate cable
+
+cable -> client: WebSocket message\n{order_id, status, price}
+deactivate cable
+
+dispatcher -> db: UPDATE status='processed'
+deactivate dispatcher
+
+@enduml

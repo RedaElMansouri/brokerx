@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_25_221000) do
+ActiveRecord::Schema[7.1].define(version: 2025_11_18_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -69,6 +69,24 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_25_221000) do
     t.index ["account_id"], name: "index_orders_on_account_id"
     t.index ["status"], name: "index_orders_on_status"
     t.index ["symbol"], name: "index_orders_on_symbol"
+  end
+
+  create_table "outbox_events", force: :cascade do |t|
+    t.string "event_type", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts", default: 0, null: false
+    t.string "correlation_id"
+    t.string "entity_type"
+    t.bigint "entity_id"
+    t.jsonb "payload", default: {}, null: false
+    t.text "last_error"
+    t.datetime "produced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_outbox_events_on_created_at"
+    t.index ["entity_type", "entity_id"], name: "index_outbox_events_on_entity_type_and_entity_id"
+    t.index ["event_type"], name: "index_outbox_events_on_event_type"
+    t.index ["status"], name: "index_outbox_events_on_status"
   end
 
   create_table "portfolio_transactions", force: :cascade do |t|

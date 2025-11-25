@@ -42,6 +42,8 @@ Ce runbook décrit comment déployer, exploiter et dépanner l’application Bro
 
 ## 3. Démarrage / Arrêt (Docker Compose)
 
+### 3.1 Pile minimale (web + postgres)
+
 Démarrer (build + setup DB + serveur) :
 ```bash
 docker compose up --build
@@ -61,6 +63,50 @@ Logs :
 ```bash
 docker compose logs -f web
 ```
+
+### 3.2 Pile microservices + gateway
+
+Pour lancer tous les microservices (orders-a, orders-b, portfolios, reporting), Redis, Kong et le migrateur (DB seed) en plus de Postgres :
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.gateway.yml \
+  up --build
+```
+
+Astuce: ajouter `-d` pour détacher. Le service `migrator` s’exécute une seule fois puis s’arrête.
+
+Recréation propre (supprime les conteneurs orphelins) :
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gateway.yml down --remove-orphans
+```
+
+### 3.3 Ajout de l’observabilité (Prometheus + Grafana)
+
+Inclure le fichier observability pour avoir les dashboards :
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.gateway.yml \
+  -f docker-compose.observability.yml \
+  up --build
+```
+
+Ou en deux temps (si la pile appli est déjà lancée) :
+```bash
+docker compose -f docker-compose.observability.yml up -d
+```
+
+### 3.4 Vérifications rapides
+
+| Élément | Commande | Attendu |
+|---------|----------|---------|
+| Santé Postgres | `docker compose ps postgres` | healthy |
+| Migrator fini | `docker compose ps migrator` | exited (0) |
+| Kong prêt | `curl -s http://localhost:8001/metrics | head` | métriques Kong |
+| Portfolio service | `curl -s http://localhost:3103/health` | `{ "status":"ok" }` |
+| Gateway proxy | `curl -i http://localhost:8080/api/v1/portfolio` | 401 (si pas de JWT) |
 
 ## 4. Santé & supervision
 - Healthcheck applicatif : `http://localhost:3000/health`
