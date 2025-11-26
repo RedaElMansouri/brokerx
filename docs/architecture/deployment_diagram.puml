@@ -1,0 +1,121 @@
+@startuml deployment_diagram
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title BrokerX - Diagramme de Déploiement
+caption Architecture Docker Compose - Phase 3
+
+' ================== NODES ==================
+
+node "Client" as client {
+    component "Navigateur Web" as browser #LightBlue
+    component "WebSocket Client" as wsclient #LightBlue
+}
+
+node "Docker Host" as docker {
+    
+    node "API Gateway Layer" as gateway_layer #LightYellow {
+        component "Kong Gateway\n:8080" as kong #Orange
+        note right of kong
+            - JWT Validation
+            - Rate Limiting
+            - CORS
+            - API Key Auth
+        end note
+    }
+    
+    node "Load Balancer Layer" as lb_layer #LightGreen {
+        component "Nginx\n:3000" as nginx #Green
+        note right of nginx
+            - least_conn algorithm
+            - Health checks
+            - SSL termination
+        end note
+    }
+    
+    node "Application Layer (x3 instances)" as app_layer #LightCyan {
+        component "Rails App 1\n:3101" as app1 #Cyan
+        component "Rails App 2\n:3102" as app2 #Cyan
+        component "Rails App 3\n:3103" as app3 #Cyan
+        
+        component "ActionCable\nWebSocket" as cable #DodgerBlue
+        
+        note bottom of app_layer
+            Chaque instance contient:
+            - API Controllers
+            - Use Cases (DDD)
+            - TradingSaga
+            - Market Simulator
+        end note
+    }
+    
+    node "Data Layer" as data_layer #LightPink {
+        database "PostgreSQL\n:5432" as postgres #Pink
+        database "Redis\n:6379" as redis #Red
+        
+        note right of postgres
+            - Clients
+            - Portfolios
+            - Orders
+            - Transactions
+        end note
+        
+        note right of redis
+            - Sessions
+            - Cache
+            - Idempotency Keys
+            - MFA Codes
+        end note
+    }
+    
+    node "Observability Layer" as obs_layer #LightGray {
+        component "Prometheus\n:9090" as prometheus #Gray
+        component "Grafana\n:3001" as grafana #Orange
+        
+        note bottom of obs_layer
+            4 Golden Signals:
+            - Latency
+            - Traffic
+            - Errors
+            - Saturation
+        end note
+    }
+}
+
+' ================== CONNECTIONS ==================
+
+' Client connections
+browser --> kong : "HTTPS\nAPI Requests"
+browser --> nginx : "HTTP\nWeb UI"
+wsclient --> nginx : "WSS\nWebSocket"
+
+' Gateway to LB
+kong --> nginx : "HTTP\nProxy"
+
+' LB to Apps (load balanced)
+nginx --> app1 : "HTTP"
+nginx --> app2 : "HTTP"
+nginx --> app3 : "HTTP"
+
+' Apps to Data
+app1 --> postgres : "TCP:5432"
+app2 --> postgres : "TCP:5432"
+app3 --> postgres : "TCP:5432"
+
+app1 --> redis : "TCP:6379"
+app2 --> redis : "TCP:6379"
+app3 --> redis : "TCP:6379"
+
+' WebSocket
+cable --> app1
+cable --> app2
+cable --> app3
+
+' Observability
+app1 --> prometheus : "/metrics"
+app2 --> prometheus : "/metrics"
+app3 --> prometheus : "/metrics"
+prometheus --> grafana : "Data Source"
+
+@enduml
