@@ -1,0 +1,127 @@
+# Kong Gateway Configuration - BrokerX Microservices
+# Routes traffic to the appropriate microservice
+
+_format_version: "3.0"
+_transform: true
+
+services:
+  # ============================================================
+  # CLIENTS SERVICE (UC-01, UC-02)
+  # ============================================================
+  - name: clients-service
+    url: http://clients-service:3000
+    routes:
+      - name: clients-register
+        paths:
+          - /api/v1/clients
+        methods:
+          - POST
+          - GET
+        strip_path: false
+      
+      - name: clients-verify
+        paths:
+          - /api/v1/clients/verify
+        methods:
+          - GET
+        strip_path: false
+      
+      - name: auth-login
+        paths:
+          - /api/v1/auth/login
+        methods:
+          - POST
+        strip_path: false
+      
+      - name: auth-mfa
+        paths:
+          - /api/v1/auth/verify_mfa
+        methods:
+          - POST
+        strip_path: false
+
+  # ============================================================
+  # PORTFOLIOS SERVICE (UC-03)
+  # ============================================================
+  - name: portfolios-service
+    url: http://portfolios-service:3000
+    routes:
+      - name: portfolio
+        paths:
+          - /api/v1/portfolio
+        methods:
+          - GET
+        strip_path: false
+      
+      - name: deposits
+        paths:
+          - /api/v1/deposits
+        methods:
+          - GET
+          - POST
+        strip_path: false
+
+  # ============================================================
+  # ORDERS SERVICE (UC-04, UC-05, UC-06, UC-07, UC-08)
+  # ============================================================
+  - name: orders-service
+    url: http://orders-service:3000
+    routes:
+      - name: orders
+        paths:
+          - /api/v1/orders
+        methods:
+          - GET
+          - POST
+        strip_path: false
+      
+      - name: orders-by-id
+        paths:
+          - /api/v1/orders/
+        methods:
+          - GET
+          - POST
+          - DELETE
+        strip_path: false
+
+  # ============================================================
+  # WEBSOCKET (ActionCable)
+  # ============================================================
+  - name: websocket-service
+    url: http://orders-service:3000
+    routes:
+      - name: cable
+        paths:
+          - /cable
+        strip_path: false
+
+# ============================================================
+# PLUGINS
+# ============================================================
+plugins:
+  # Rate Limiting global
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+  
+  # CORS
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - Accept
+        - Idempotency-Key
+      exposed_headers:
+        - X-Instance-Id
+      credentials: true
+      max_age: 3600
