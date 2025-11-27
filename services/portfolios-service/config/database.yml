@@ -1,0 +1,28 @@
+# frozen_string_literal: true
+
+# Portfolios Service Database Configuration
+# This service has its own isolated PostgreSQL database
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "postgres") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", "postgres") %>
+
+development:
+  <<: *default
+  database: portfolios_service_development
+  port: <%= ENV.fetch("DATABASE_PORT", 5434) %>
+
+test:
+  <<: *default
+  database: portfolios_service_test
+  port: <%= ENV.fetch("DATABASE_PORT", 5434) %>
+
+production:
+  <<: *default
+  database: portfolios_service_production
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>

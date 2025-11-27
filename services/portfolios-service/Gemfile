@@ -1,0 +1,45 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '3.2.2'
+
+# Rails - API mode
+gem 'rails', '~> 7.1.0'
+
+# Database
+gem 'pg', '~> 1.5'
+
+# Web server
+gem 'puma', '~> 6.0'
+
+# Authentication (JWT validation)
+gem 'jwt', '~> 2.7'
+
+# HTTP client for inter-service communication
+gem 'faraday', '~> 2.7'
+
+# Redis for caching
+gem 'redis', '~> 5.0'
+
+# CORS
+gem 'rack-cors', '~> 2.0'
+
+# Environment variables
+gem 'dotenv-rails', '~> 2.8'
+
+# Bootsnap for faster boot
+gem 'bootsnap', require: false
+
+group :development, :test do
+  gem 'debug', '~> 1.8'
+end
+
+group :test do
+  gem 'rspec-rails', '~> 6.0'
+  gem 'factory_bot_rails', '~> 6.2'
+  gem 'faker', '~> 3.2'
+  gem 'database_cleaner-active_record', '~> 2.1'
+  gem 'simplecov', '~> 0.22', require: false
+  gem 'webmock', '~> 3.18'
+end

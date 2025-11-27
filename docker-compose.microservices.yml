@@ -131,7 +131,8 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        bundle exec rails db:create db:migrate db:seed &&
+        bundle exec rails db:create db:migrate &&
+        bundle exec rails db:seed || true &&
         bundle exec rails server -b 0.0.0.0 -p 3000
       "
     healthcheck:
@@ -168,7 +169,8 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        bundle exec rails db:create db:migrate db:seed &&
+        bundle exec rails db:create db:migrate &&
+        bundle exec rails db:seed || true &&
         bundle exec rails server -b 0.0.0.0 -p 3000
       "
     healthcheck:
@@ -176,8 +178,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    profiles:
-      - full
 
   orders-service:
     build:
@@ -224,7 +224,7 @@ services:
   # ===========================================
 
   kong:
-    image: kong:3.4-alpine
+    image: kong:3.4
     container_name: brokerx-kong
     environment:
       KONG_DATABASE: "off"
@@ -248,8 +248,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    profiles:
-      - full
 
   # ===========================================
   # OBSERVABILITY (optional)

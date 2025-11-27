@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       # UC-01: Inscription et Vérification du Client
       resources :clients, only: [:create, :show] do
         member do
+          get :verify_email
           post :verify_email
           post :resend_verification
         end

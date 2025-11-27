@@ -46,9 +46,17 @@ services:
   - name: portfolios-service
     url: http://portfolios-service:3000
     routes:
-      - name: portfolio
+      - name: portfolios
         paths:
-          - /api/v1/portfolio
+          - /api/v1/portfolios
+        methods:
+          - GET
+          - POST
+        strip_path: false
+      
+      - name: portfolios-by-id
+        paths:
+          - /api/v1/portfolios/
         methods:
           - GET
         strip_path: false
@@ -59,6 +67,28 @@ services:
         methods:
           - GET
           - POST
+        strip_path: false
+      
+      - name: deposits-by-id
+        paths:
+          - /api/v1/deposits/
+        methods:
+          - GET
+        strip_path: false
+      
+      - name: withdrawals
+        paths:
+          - /api/v1/withdrawals
+        methods:
+          - GET
+          - POST
+        strip_path: false
+      
+      - name: withdrawals-by-id
+        paths:
+          - /api/v1/withdrawals/
+        methods:
+          - GET
         strip_path: false
 
   # ============================================================
