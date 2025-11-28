@@ -31,3 +31,34 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+# ============================================
+# Microservices - Ignore generated files
+# ============================================
+
+# Temporary files
+/services/*/tmp/
+/services/*/log/
+/services/*/.bundle/
+
+# PID files
+/services/*/tmp/pids/
+
+# Storage
+/services/*/storage/
+
+# Environment files
+/services/*/.env*
+
+# Master keys
+/services/*/config/master.key
+
+# Gemfile.lock for services (optional - remove if you want to track)
+# /services/*/Gemfile.lock
+
+# Node modules if any
+/services/*/node_modules/
+
+# Coverage reports
+/services/*/coverage/
+

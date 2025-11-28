@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class MetricsController < ApplicationController
+  skip_before_action :authenticate_request!, raise: false
   skip_before_action :set_request_id, raise: false
 
   def show
