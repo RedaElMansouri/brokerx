@@ -1,0 +1,79 @@
+# Docker Compose for Observability Stack
+# Prometheus, Grafana, and Jaeger for microservices monitoring
+version: '3.8'
+
+services:
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: brokerx-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/observability/prometheus-microservices.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - brokerx-network
+    restart: unless-stopped
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: brokerx-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=brokerx123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3100
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - brokerx-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Jaeger - Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: brokerx-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Collector HTTP
+      - "6831:6831/udp" # Thrift compact
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    networks:
+      - brokerx-network
+    restart: unless-stopped
+
+  # Loki - Log Aggregation (optional but recommended)
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: brokerx-loki
+    ports:
+      - "3101:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - brokerx-network
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+networks:
+  brokerx-network:
+    external: true

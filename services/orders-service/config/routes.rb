@@ -5,6 +5,9 @@ Rails.application.routes.draw do
   get '/health', to: 'health#show'
   get '/ready', to: 'health#ready'
 
+  # Metrics endpoint for Prometheus
+  get '/metrics', to: 'metrics#show'
+
   # ActionCable WebSocket
   mount ActionCable.server => '/cable'
 
