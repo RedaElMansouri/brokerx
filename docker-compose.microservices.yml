@@ -195,8 +195,9 @@ services:
       REDIS_URL: redis://redis:6379/2
       CLIENTS_SERVICE_URL: http://clients-service:3000
       PORTFOLIOS_SERVICE_URL: http://portfolios-service:3000
-      JWT_SECRET_KEY: microservices_jwt_secret_change_in_production
+      JWT_SECRET: microservices_jwt_secret_change_in_production
       SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      ACTION_CABLE_URL: ws://localhost:3003/cable
       INSTANCE_ID: orders-1
       RAILS_LOG_TO_STDOUT: "true"
     depends_on:
@@ -208,7 +209,8 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        bundle exec rails db:create db:migrate db:seed &&
+        bundle exec rails db:create db:migrate &&
+        bundle exec rails db:seed || true &&
         bundle exec rails server -b 0.0.0.0 -p 3000
       "
     healthcheck:
@@ -216,8 +218,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    profiles:
-      - full
 
   # ===========================================
   # API GATEWAY
