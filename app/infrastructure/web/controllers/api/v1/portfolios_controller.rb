@@ -1,9 +1,17 @@
+# frozen_string_literal: true
+
+# @deprecated This controller is deprecated and will be removed in a future version.
+# Portfolios are now handled by the portfolios-service microservice.
+# This code is kept as a fallback only. Use Kong Gateway (port 8080) for production traffic.
+# See: docs/architecture/microservices-architecture.md
 module Api
   module V1
     class PortfoliosController < ApplicationController
       skip_before_action :verify_authenticity_token if respond_to?(:skip_before_action)
 
+      # @deprecated Use portfolios-service via Kong Gateway instead
       def show
+        Rails.logger.warn("[DEPRECATED] PortfoliosController#show called - use portfolios-service instead")
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)
   return render_api_error(code: 'unauthorized', message: 'Unauthorized', status: :unauthorized) unless client_id

@@ -1,10 +1,18 @@
+# frozen_string_literal: true
+
+# @deprecated This controller is deprecated and will be removed in a future version.
+# Deposits are now handled by the portfolios-service microservice.
+# This code is kept as a fallback only. Use Kong Gateway (port 8080) for production traffic.
+# See: docs/architecture/microservices-architecture.md
 module Api
   module V1
     class DepositsController < ApplicationController
       # Endpoints API : pas de vérification CSRF nécessaire
       skip_before_action :verify_authenticity_token
 
+      # @deprecated Use portfolios-service via Kong Gateway instead
       def create
+        Rails.logger.warn("[DEPRECATED] DepositsController#create called - use portfolios-service instead")
         # Dépôt de fonds idempotent sur le portefeuille du client
         token = request.headers['Authorization']&.to_s&.gsub(/^Bearer\s+/i, '')
         client_id = token_to_client_id(token)

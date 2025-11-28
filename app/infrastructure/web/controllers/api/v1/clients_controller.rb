@@ -1,8 +1,16 @@
+# frozen_string_literal: true
+
+# @deprecated This controller is deprecated and will be removed in a future version.
+# Client registration and verification is now handled by the clients-service microservice.
+# This code is kept as a fallback only. Use Kong Gateway (port 8080) for production traffic.
+# See: docs/architecture/microservices-architecture.md
 module Api
   module V1
     class ClientsController < ApplicationController
+      # @deprecated Use clients-service via Kong Gateway instead
       def create
         # Inscription d'un client (crée un portefeuille associé)
+        Rails.logger.warn("[DEPRECATED] ClientsController#create called - use clients-service instead")
 
         # Garantir des mots-clés pour le DTO
         dto_attrs = client_params.to_h.symbolize_keys

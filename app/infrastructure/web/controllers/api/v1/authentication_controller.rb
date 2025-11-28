@@ -1,8 +1,16 @@
+# frozen_string_literal: true
+
+# @deprecated This controller is deprecated and will be removed in a future version.
+# Authentication is now handled by the clients-service microservice.
+# This code is kept as a fallback only. Use Kong Gateway (port 8080) for production traffic.
+# See: docs/architecture/microservices-architecture.md
 module Api
   module V1
     class AuthenticationController < ApplicationController
+      # @deprecated Use clients-service via Kong Gateway instead
       # Step 1: verify credentials and send MFA code by email
       def login
+        Rails.logger.warn("[DEPRECATED] AuthenticationController#login called - use clients-service instead")
         use_case = Application::UseCases::AuthenticateUserUseCase.new(client_repository)
         result = use_case.execute(params[:email].to_s.strip.downcase, params[:password])
 
