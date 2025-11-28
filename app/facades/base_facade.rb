@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
+require 'net/http'
+require 'uri'
+require 'json'
+
 # Base class for all service facades
 # Part of Strangler Fig pattern - allows monolith to delegate to microservices
+# Uses Ruby's stdlib Net::HTTP to avoid native gem dependencies
 class BaseFacade
   class ServiceUnavailableError < StandardError; end
   class ServiceError < StandardError; end
@@ -18,50 +23,68 @@ class BaseFacade
     raise NotImplementedError, "Subclasses must implement #service_url"
   end
 
-  def http_client
-    @http_client ||= build_http_client
-  end
-
-  def build_http_client
-    Faraday.new(url: service_url) do |faraday|
-      faraday.request :json
-      faraday.response :json, parser_options: { symbolize_names: true }
-      faraday.options.timeout = @timeout
-      faraday.options.open_timeout = @open_timeout
-      faraday.adapter Faraday.default_adapter
-    end
-  end
-
   def make_request(method, path, params = {}, headers = {})
-    response = case method
-               when :get
-                 http_client.get(path, params, headers)
-               when :post
-                 http_client.post(path, params, headers)
-               when :put
-                 http_client.put(path, params, headers)
-               when :patch
-                 http_client.patch(path, params, headers)
-               when :delete
-                 http_client.delete(path, params, headers)
-               end
-
+    uri = URI.join(service_url, path)
+    
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = @timeout
+    http.open_timeout = @open_timeout
+    http.use_ssl = uri.scheme == 'https'
+    
+    request = build_request(method, uri, params, headers)
+    response = http.request(request)
+    
     handle_response(response)
-  rescue Faraday::ConnectionFailed, Faraday::TimeoutError => e
+  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout => e
     Rails.logger.error("[#{self.class.name}] Connection failed: #{e.message}")
     raise ServiceUnavailableError, "Service unavailable: #{e.message}"
+  rescue StandardError => e
+    Rails.logger.error("[#{self.class.name}] Request failed: #{e.message}")
+    raise ServiceError, "Service error: #{e.message}"
+  end
+
+  def build_request(method, uri, params, headers)
+    case method
+    when :get
+      uri.query = URI.encode_www_form(params) if params.any?
+      request = Net::HTTP::Get.new(uri)
+    when :post
+      request = Net::HTTP::Post.new(uri)
+      request.body = params.to_json
+      request['Content-Type'] = 'application/json'
+    when :put
+      request = Net::HTTP::Put.new(uri)
+      request.body = params.to_json
+      request['Content-Type'] = 'application/json'
+    when :patch
+      request = Net::HTTP::Patch.new(uri)
+      request.body = params.to_json
+      request['Content-Type'] = 'application/json'
+    when :delete
+      request = Net::HTTP::Delete.new(uri)
+    end
+    
+    headers.each { |key, value| request[key] = value }
+    request
   end
 
   def handle_response(response)
-    case response.status
+    status = response.code.to_i
+    body = begin
+      JSON.parse(response.body, symbolize_names: true)
+    rescue JSON::ParserError
+      response.body
+    end
+
+    case status
     when 200..299
-      { success: true, data: response.body, status: response.status }
+      { success: true, data: body, status: status }
     when 400..499
-      { success: false, error: response.body, status: response.status }
+      { success: false, error: body, status: status }
     when 500..599
-      raise ServiceError, "Service error: #{response.status}"
+      raise ServiceError, "Service error: #{status}"
     else
-      { success: false, error: "Unknown response: #{response.status}", status: response.status }
+      { success: false, error: "Unknown response: #{status}", status: status }
     end
   end
 

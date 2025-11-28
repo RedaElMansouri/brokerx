@@ -14,8 +14,8 @@ gem 'jwt'
 gem 'rack-attack'
 gem 'rack-cors'
 
-# HTTP Client for microservices communication
-gem 'faraday', '~> 2.7'
+# Note: We use Net::HTTP (Ruby stdlib) for HTTP client instead of Faraday
+# to avoid native gem compilation issues. The facades use Net::HTTP directly.
 
 # Security
 gem 'bcrypt', '~> 3.1.7'

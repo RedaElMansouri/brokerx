@@ -7,21 +7,31 @@ Rails.application.routes.draw do
   # Point de santé (utilisé par les probes/healthchecks)
   get '/health', to: proc { [200, {}, [{ status: 'ok', timestamp: Time.now.iso8601 }.to_json]] }
 
-  # Routes API
+  # Routes API (Monolith fallback - Kong Gateway routes to microservices)
   namespace :api do
     namespace :v1 do
-      post 'clients/register', to: 'clients#create'
-      get 'clients/verify', to: 'clients#verify'
+      # Clients (UC-01)
+      resources :clients, only: [:create] do
+        member do
+          get :verify
+        end
+      end
+      
+      # Authentication (UC-02)
       post 'auth/login', to: 'authentication#login'
       post 'auth/verify_mfa', to: 'authentication#verify_mfa'
-      post 'deposits', to: 'deposits#create'
-      get  'deposits', to: 'deposits#index'
+      
+      # Deposits (UC-03)
+      resources :deposits, only: [:create, :index]
       get 'portfolio', to: 'portfolios#show'
-      post 'orders', to: 'orders#create'
-      get  'orders/:id', to: 'orders#show'
-      delete 'orders/:id', to: 'orders#destroy'
-      post 'orders/:id/replace', to: 'orders#replace'
-      post 'orders/:id/cancel', to: 'orders#cancel'
+      
+      # Orders (UC-04 to UC-08)
+      resources :orders, only: [:create, :show, :destroy] do
+        member do
+          post :replace
+          post :cancel
+        end
+      end
     end
   end
 

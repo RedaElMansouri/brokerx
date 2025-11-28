@@ -13,6 +13,26 @@ plugins:
       upstream_health_metrics: true
 
 services:
+  # Clients/Authentication service
+  - name: clients
+    url: http://clients-service:3000
+    routes:
+      - name: clients-routes
+        paths:
+          - /api/v1/clients
+          - /api/v1/auth
+          - /api/v1/me
+        strip_path: false
+        methods: [GET, POST]
+    plugins:
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: [GET, POST, OPTIONS]
+          headers: ["Authorization", "Content-Type", "apikey"]
+          credentials: true
+      # No key-auth for registration/login (public endpoints)
+
   # Orders service with two targets for LB
   - name: orders
     url: http://orders-upstream

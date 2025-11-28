@@ -6,6 +6,9 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.server_timing = true
 
+  # Allow all hosts in development (for Docker/Kong)
+  config.hosts.clear
+
   # Caching
   if Rails.root.join('tmp/caching-dev.txt').exist?
     config.action_controller.perform_caching = true
