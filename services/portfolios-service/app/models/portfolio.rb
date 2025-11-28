@@ -14,6 +14,14 @@ class Portfolio < ApplicationRecord
   scope :active, -> { where(status: 'active') }
   scope :for_client, ->(client_id) { where(client_id: client_id) }
 
+  # Alias for internal API compatibility
+  alias_attribute :balance, :cash_balance
+
+  # Calculate available balance (total - reserved)
+  def available_balance
+    cash_balance - (reserved_amount || 0)
+  end
+
   def deposit!(amount, idempotency_key:, currency: nil)
     raise ArgumentError, 'Amount must be positive' if amount <= 0
 
@@ -74,6 +82,7 @@ class Portfolio < ApplicationRecord
   def set_defaults
     self.currency ||= 'CAD'
     self.cash_balance ||= 0.0
+    self.reserved_amount ||= 0.0
     self.status ||= 'active'
   end
 end

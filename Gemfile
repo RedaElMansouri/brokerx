@@ -14,6 +14,9 @@ gem 'jwt'
 gem 'rack-attack'
 gem 'rack-cors'
 
+# HTTP Client for microservices communication
+gem 'faraday', '~> 2.7'
+
 # Security
 gem 'bcrypt', '~> 3.1.7'
 

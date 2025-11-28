@@ -22,4 +22,17 @@ Rails.application.routes.draw do
       resources :withdrawals, only: [:index, :show, :create]
     end
   end
+
+  # ============ INTERNAL APIs (for inter-service communication) ============
+  # These endpoints are called by Orders Service for Saga pattern
+  namespace :internal do
+    # Reserve funds for an order
+    post 'reserve', to: 'funds#reserve'
+    # Release reserved funds (compensation)
+    post 'release', to: 'funds#release'
+    # Debit funds after execution
+    post 'debit', to: 'funds#debit'
+    # Check balance
+    get 'balance/:client_id', to: 'funds#balance'
+  end
 end

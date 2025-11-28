@@ -3,7 +3,9 @@
 class PortfolioTransaction < ApplicationRecord
   belongs_to :portfolio
 
-  validates :transaction_type, presence: true, inclusion: { in: %w[deposit withdrawal buy sell dividend fee] }
+  TRANSACTION_TYPES = %w[deposit withdrawal buy sell dividend fee reserve release debit].freeze
+
+  validates :transaction_type, presence: true, inclusion: { in: TRANSACTION_TYPES }
   validates :amount, presence: true, numericality: { greater_than: 0 }
   validates :currency, presence: true, inclusion: { in: %w[CAD USD EUR] }
   validates :status, presence: true, inclusion: { in: %w[pending processing completed failed cancelled] }
@@ -13,6 +15,9 @@ class PortfolioTransaction < ApplicationRecord
 
   scope :deposits, -> { where(transaction_type: 'deposit') }
   scope :withdrawals, -> { where(transaction_type: 'withdrawal') }
+  scope :reserves, -> { where(transaction_type: 'reserve') }
+  scope :releases, -> { where(transaction_type: 'release') }
+  scope :debits, -> { where(transaction_type: 'debit') }
   scope :completed, -> { where(status: 'completed') }
   scope :pending, -> { where(status: 'pending') }
 
