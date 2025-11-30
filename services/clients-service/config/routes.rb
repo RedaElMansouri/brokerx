@@ -7,6 +7,11 @@ Rails.application.routes.draw do
   # Metrics endpoint for Prometheus
   get '/metrics', to: 'metrics#show'
 
+  # Swagger UI
+  get '/swagger', to: 'swagger#index'
+  get '/swagger.html', to: 'swagger#index'
+  get '/openapi.yaml', to: 'swagger#openapi'
+
   # API v1 namespace
   namespace :api do
     namespace :v1 do

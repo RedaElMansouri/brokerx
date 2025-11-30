@@ -1,0 +1,618 @@
+{
+  "info": {
+    "name": "BrokerX Microservices",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection Postman pour tester l'architecture microservices BrokerX.\n\n## Workflow de test\n1. Register → Verify Email → Login → Verify MFA → Obtenir JWT\n2. Utiliser le JWT pour toutes les autres requêtes\n\n## Services\n- Kong Gateway: http://localhost:8080\n- Clients: http://localhost:3001\n- Portfolios: http://localhost:3002\n- Orders: http://localhost:3003"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    { "key": "gateway", "value": "http://localhost:8080" },
+    { "key": "clients", "value": "http://localhost:3001" },
+    { "key": "portfolios", "value": "http://localhost:3002" },
+    { "key": "orders", "value": "http://localhost:3003" },
+    { "key": "token", "value": "" },
+    { "key": "client_id", "value": "" },
+    { "key": "verification_token", "value": "" },
+    { "key": "session_token", "value": "" },
+    { "key": "mfa_code", "value": "" },
+    { "key": "test_email", "value": "" },
+    { "key": "test_password", "value": "SecurePass123!" },
+    { "key": "order_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Health Checks",
+      "item": [
+        {
+          "name": "Clients Service Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{clients}}/health", "host": ["{{clients}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "Portfolios Service Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{portfolios}}/health", "host": ["{{portfolios}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "Orders Service Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{orders}}/health", "host": ["{{orders}}"], "path": ["health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. UC-01 Register & Verify",
+      "item": [
+        {
+          "name": "1.1 Register New Client",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "const email = 'user_' + timestamp + '@brokerx.test';",
+                  "pm.collectionVariables.set('test_email', email);",
+                  "console.log('📧 Generated email:', email);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('client_id', json.client.id);",
+                  "  pm.collectionVariables.set('verification_token', json.verification_token);",
+                  "  console.log('✅ Client ID:', json.client.id);",
+                  "  console.log('✅ Verification token saved');",
+                  "} else {",
+                  "  console.log('❌ Registration failed:', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client\": {\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\",\n    \"password_confirmation\": \"{{test_password}}\",\n    \"name\": \"Test User\"\n  }\n}"
+            },
+            "url": { "raw": "{{clients}}/api/v1/clients", "host": ["{{clients}}"], "path": ["api", "v1", "clients"] }
+          }
+        },
+        {
+          "name": "1.2 Verify Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  console.log('✅ Email verified successfully');",
+                  "} else {",
+                  "  console.log('❌ Verification failed:', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}"
+            },
+            "url": { "raw": "{{clients}}/api/v1/clients/{{client_id}}/verify_email", "host": ["{{clients}}"], "path": ["api", "v1", "clients", "{{client_id}}", "verify_email"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. UC-02 Login & MFA",
+      "item": [
+        {
+          "name": "2.1 Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('session_token', json.session_token);",
+                  "  pm.collectionVariables.set('mfa_code', json.mfa_code);",
+                  "  console.log('✅ Session token saved');",
+                  "  console.log('✅ MFA code:', json.mfa_code);",
+                  "} else {",
+                  "  console.log('❌ Login failed:', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": { "raw": "{{clients}}/api/v1/auth/login", "host": ["{{clients}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "2.2 Verify MFA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('✅ JWT Token saved!');",
+                  "  console.log('Token:', json.token.substring(0, 50) + '...');",
+                  "} else {",
+                  "  console.log('❌ MFA failed:', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_token\": \"{{session_token}}\",\n  \"mfa_code\": \"{{mfa_code}}\"\n}"
+            },
+            "url": { "raw": "{{clients}}/api/v1/auth/verify_mfa", "host": ["{{clients}}"], "path": ["api", "v1", "auth", "verify_mfa"] }
+          }
+        },
+        {
+          "name": "2.3 Get Current User (me)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.collectionVariables.get('token');",
+                  "console.log('🔑 Using token:', token ? 'YES' : 'NO - Run Verify MFA first!');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{clients}}/api/v1/me", "host": ["{{clients}}"], "path": ["api", "v1", "me"] }
+          }
+        },
+        {
+          "name": "2.4 Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{clients}}/api/v1/auth/logout", "host": ["{{clients}}"], "path": ["api", "v1", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. UC-03 Portfolios & Deposits",
+      "item": [
+        {
+          "name": "Get My Portfolios",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{portfolios}}/api/v1/portfolios", "host": ["{{portfolios}}"], "path": ["api", "v1", "portfolios"] }
+          }
+        },
+        {
+          "name": "Create Portfolio",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Trading Account\",\n  \"currency\": \"USD\"\n}"
+            },
+            "url": { "raw": "{{portfolios}}/api/v1/portfolios", "host": ["{{portfolios}}"], "path": ["api", "v1", "portfolios"] }
+          }
+        },
+        {
+          "name": "Deposit Funds",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10000.00,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": { "raw": "{{portfolios}}/api/v1/deposits", "host": ["{{portfolios}}"], "path": ["api", "v1", "deposits"] }
+          }
+        },
+        {
+          "name": "List Deposits",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{portfolios}}/api/v1/deposits", "host": ["{{portfolios}}"], "path": ["api", "v1", "deposits"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. UC-04 Market Data",
+      "item": [
+        {
+          "name": "Get All Market Data",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/market_data", "host": ["{{orders}}"], "path": ["api", "v1", "market_data"] }
+          }
+        },
+        {
+          "name": "Get AAPL Quote",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/market_data/AAPL", "host": ["{{orders}}"], "path": ["api", "v1", "market_data", "AAPL"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. UC-05 Place Order",
+      "item": [
+        {
+          "name": "Place Limit Buy Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) {",
+                  "    pm.collectionVariables.set('order_id', json.order.id);",
+                  "    console.log('✅ Order ID saved:', json.order.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"direction\": \"buy\",\n  \"order_type\": \"limit\",\n  \"quantity\": 10,\n  \"price\": 175.00,\n  \"time_in_force\": \"DAY\"\n}"
+            },
+            "url": { "raw": "{{orders}}/api/v1/orders", "host": ["{{orders}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Limit Sell Order (to match Buy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) {",
+                  "    console.log('✅ Sell Order created:', json.order.id);",
+                  "    console.log('Status:', json.order.status);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"direction\": \"sell\",\n  \"order_type\": \"limit\",\n  \"quantity\": 5,\n  \"price\": 150.00,\n  \"time_in_force\": \"DAY\"\n}"
+            },
+            "url": { "raw": "{{orders}}/api/v1/orders", "host": ["{{orders}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/orders", "host": ["{{orders}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Market Buy Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) {",
+                  "    pm.collectionVariables.set('order_id', json.order.id);",
+                  "    console.log('✅ Buy Order ID saved:', json.order.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"direction\": \"buy\",\n  \"order_type\": \"market\",\n  \"quantity\": 10,\n  \"time_in_force\": \"DAY\"\n}"
+            },
+            "url": { "raw": "{{orders}}/api/v1/orders", "host": ["{{orders}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        {
+          "name": "Place Market Sell Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) {",
+                  "    pm.collectionVariables.set('order_id', json.order.id);",
+                  "    console.log('✅ Sell Order ID saved:', json.order.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"direction\": \"sell\",\n  \"order_type\": \"market\",\n  \"quantity\": 5,\n  \"time_in_force\": \"DAY\"\n}"
+            },
+            "url": { "raw": "{{orders}}/api/v1/orders", "host": ["{{orders}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/orders/{{order_id}}", "host": ["{{orders}}"], "path": ["api", "v1", "orders", "{{order_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. UC-06 Modify & Cancel",
+      "item": [
+        {
+          "name": "Modify Order",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 15,\n  \"price\": 180.00\n}"
+            },
+            "url": { "raw": "{{orders}}/api/v1/orders/{{order_id}}/replace", "host": ["{{orders}}"], "path": ["api", "v1", "orders", "{{order_id}}", "replace"] }
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/orders/{{order_id}}/cancel", "host": ["{{orders}}"], "path": ["api", "v1", "orders", "{{order_id}}", "cancel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. UC-08 Executions & Trades",
+      "item": [
+        {
+          "name": "List Executions",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/executions", "host": ["{{orders}}"], "path": ["api", "v1", "executions"] }
+          }
+        },
+        {
+          "name": "List Trades",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{orders}}/api/v1/trades", "host": ["{{orders}}"], "path": ["api", "v1", "trades"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Internal APIs",
+      "item": [
+        {
+          "name": "[Internal] Check Balance",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "X-Internal-Token", "value": "internal_service_secret_change_in_production" }
+            ],
+            "url": { "raw": "{{portfolios}}/internal/balance/{{client_id}}", "host": ["{{portfolios}}"], "path": ["internal", "balance", "{{client_id}}"] }
+          }
+        },
+        {
+          "name": "[Internal] Reserve Funds",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Internal-Token", "value": "internal_service_secret_change_in_production" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"{{client_id}}\",\n  \"amount\": 500.00,\n  \"order_id\": \"test-order-123\"\n}"
+            },
+            "url": { "raw": "{{portfolios}}/internal/reserve", "host": ["{{portfolios}}"], "path": ["internal", "reserve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Metrics",
+      "item": [
+        {
+          "name": "Clients Metrics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{clients}}/metrics", "host": ["{{clients}}"], "path": ["metrics"] }
+          }
+        },
+        {
+          "name": "Portfolios Metrics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{portfolios}}/metrics", "host": ["{{portfolios}}"], "path": ["metrics"] }
+          }
+        },
+        {
+          "name": "Orders Metrics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{orders}}/metrics", "host": ["{{orders}}"], "path": ["metrics"] }
+          }
+        }
+      ]
+    }
+  ]
+}

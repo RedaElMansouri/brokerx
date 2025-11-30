@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrokerX Microservices API – Swagger UI</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <style>
+        body { 
+            margin: 0; 
+            background: #1a1a2e; 
+        }
+        .topbar { 
+            display: none; 
+        }
+        .swagger-ui .info .title {
+            color: #00d4aa;
+        }
+        .swagger-ui .info .description {
+            color: #e0e0e0;
+        }
+        .swagger-ui .opblock-tag {
+            color: #00d4aa;
+            border-bottom: 1px solid #333;
+        }
+        .swagger-ui .opblock.opblock-post {
+            background: rgba(73, 204, 144, 0.1);
+            border-color: #49cc90;
+        }
+        .swagger-ui .opblock.opblock-get {
+            background: rgba(97, 175, 254, 0.1);
+            border-color: #61affe;
+        }
+        .swagger-ui .opblock.opblock-delete {
+            background: rgba(249, 62, 62, 0.1);
+            border-color: #f93e3e;
+        }
+        .swagger-ui .scheme-container {
+            background: #16213e;
+            box-shadow: none;
+        }
+        .swagger-ui select {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        /* Header style */
+        .custom-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00d4aa;
+        }
+        .custom-header h1 {
+            color: #00d4aa;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .custom-header p {
+            color: #888;
+            margin: 5px 0 0;
+        }
+        .service-badges {
+            margin-top: 15px;
+        }
+        .service-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-clients {
+            background: #49cc90;
+            color: #1a1a2e;
+        }
+        .badge-portfolios {
+            background: #61affe;
+            color: #1a1a2e;
+        }
+        .badge-orders {
+            background: #fca130;
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>🚀 BrokerX Microservices API</h1>
+        <p>Phase 3 - Distributed Architecture</p>
+        <div class="service-badges">
+            <span class="service-badge badge-clients">Clients :3001</span>
+            <span class="service-badge badge-portfolios">Portfolios :3002</span>
+            <span class="service-badge badge-orders">Orders :3003</span>
+        </div>
+    </div>
+    <div id="swagger"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+    <script>
+        window.ui = SwaggerUIBundle({
+            url: '/openapi.yaml',
+            dom_id: '#swagger',
+            presets: [SwaggerUIBundle.presets.apis],
+            layout: 'BaseLayout',
+            deepLinking: true,
+            tryItOutEnabled: true,
+            persistAuthorization: true,
+            displayRequestDuration: true,
+            filter: true,
+            showExtensions: true
+        });
+    </script>
+</body>
+</html>

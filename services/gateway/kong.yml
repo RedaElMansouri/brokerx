@@ -6,6 +6,27 @@ _transform: true
 
 services:
   # ============================================================
+  # SWAGGER UI
+  # ============================================================
+  - name: swagger
+    url: http://clients-service:3000
+    routes:
+      - name: swagger-ui
+        paths:
+          - /swagger
+          - /swagger.html
+        methods:
+          - GET
+        strip_path: false
+      
+      - name: openapi-spec
+        paths:
+          - /openapi.yaml
+        methods:
+          - GET
+        strip_path: false
+
+  # ============================================================
   # CLIENTS SERVICE (UC-01, UC-02)
   # ============================================================
   - name: clients-service
@@ -38,6 +59,13 @@ services:
           - /api/v1/auth/verify_mfa
         methods:
           - POST
+        strip_path: false
+      
+      - name: me-endpoint
+        paths:
+          - /api/v1/me
+        methods:
+          - GET
         strip_path: false
 
   # ============================================================
@@ -112,6 +140,13 @@ services:
           - GET
           - POST
           - DELETE
+        strip_path: false
+      
+      - name: trades
+        paths:
+          - /api/v1/trades
+        methods:
+          - GET
         strip_path: false
 
   # ============================================================

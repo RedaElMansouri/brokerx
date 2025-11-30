@@ -2,24 +2,25 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  scrape_timeout: 10s
 
 scrape_configs:
   - job_name: 'clients-service'
     static_configs:
-      - targets: ['clients-service:3000']
+      - targets: ['brokerx-clients-service:3000']
     metrics_path: '/metrics'
 
   - job_name: 'portfolios-service'
     static_configs:
-      - targets: ['portfolios-service:3000']
+      - targets: ['brokerx-portfolios-service:3000']
     metrics_path: '/metrics'
 
   - job_name: 'orders-service'
     static_configs:
-      - targets: ['orders-service:3000']
+      - targets: ['brokerx-orders-service:3000']
     metrics_path: '/metrics'
 
   - job_name: 'kong'
     static_configs:
-      - targets: ['kong:8001']
+      - targets: ['brokerx-kong:8001']
     metrics_path: '/metrics'

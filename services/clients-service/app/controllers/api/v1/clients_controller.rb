@@ -8,10 +8,18 @@ module Api
         result = RegisterClientUseCase.new.execute(client_params)
 
         if result.success?
-          render json: {
+          response_data = {
             message: 'Client registered successfully. Please check your email for verification.',
             client: ClientSerializer.new(result.client).as_json
-          }, status: :created
+          }
+          
+          # Include verification token in development/test for easier testing
+          if Rails.env.development? || Rails.env.test?
+            verification_token = result.client.verification_tokens.last
+            response_data[:verification_token] = verification_token&.token
+          end
+          
+          render json: response_data, status: :created
         else
           render json: {
             error: 'Registration failed',

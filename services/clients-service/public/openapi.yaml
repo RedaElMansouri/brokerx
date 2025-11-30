@@ -1,0 +1,614 @@
+openapi: 3.1.0
+info:
+  title: BrokerX Microservices API
+  version: v1
+  description: |
+    API REST de BrokerX - Architecture Microservices
+    
+    ## Services
+    - **Clients Service** (port 3001): Gestion des clients et authentification
+    - **Portfolios Service** (port 3002): Gestion des portfolios et dépôts
+    - **Orders Service** (port 3003): Gestion des ordres et matching
+    
+    ## Authentification
+    1. Register → Verify Email → Login → Verify MFA → Get JWT Token
+    2. Utilisez le token JWT dans le header `Authorization: Bearer <token>`
+    
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Kong API Gateway
+  - url: http://localhost:3001
+    description: Clients Service (direct)
+  - url: http://localhost:3002
+    description: Portfolios Service (direct)
+  - url: http://localhost:3003
+    description: Orders Service (direct)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenu après vérification MFA
+  
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        message:
+          type: string
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+          example: AAPL
+        direction:
+          type: string
+          enum: [buy, sell]
+        order_type:
+          type: string
+          enum: [market, limit]
+        quantity:
+          type: integer
+        price:
+          type: number
+        status:
+          type: string
+          enum: [new, working, filled, partially_filled, cancelled]
+        filled_quantity:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        direction:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: integer
+        price:
+          type: number
+        executed_at:
+          type: string
+          format: date-time
+
+    Portfolio:
+      type: object
+      properties:
+        available_balance:
+          type: number
+        reserved_balance:
+          type: number
+        total_balance:
+          type: number
+        currency:
+          type: string
+          example: USD
+
+paths:
+  # ==================== CLIENTS SERVICE ====================
+  /api/v1/clients:
+    post:
+      tags: [1. Authentication]
+      summary: Register new client
+      description: Create a new client account. Returns verification_token in dev/test mode.
+      operationId: registerClient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client]
+              properties:
+                client:
+                  type: object
+                  required: [email, first_name, last_name, password]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+                    password:
+                      type: string
+                      minLength: 8
+            example:
+              client:
+                email: "test@example.com"
+                first_name: "John"
+                last_name: "Doe"
+                password: "SecurePass123!"
+      responses:
+        '201':
+          description: Client created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  client_id:
+                    type: string
+                    format: uuid
+                  verification_token:
+                    type: string
+                    description: Only in dev/test mode
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/clients/{id}/verify_email:
+    post:
+      tags: [1. Authentication]
+      summary: Verify email address
+      description: Verify client email using the token received
+      operationId: verifyEmail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully
+        '400':
+          description: Invalid or expired token
+
+  /api/v1/auth/login:
+    post:
+      tags: [1. Authentication]
+      summary: Login
+      description: Authenticate with email/password. Returns session_token and mfa_code in dev/test mode.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+            example:
+              email: "test@example.com"
+              password: "SecurePass123!"
+      responses:
+        '200':
+          description: MFA code sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  session_token:
+                    type: string
+                  mfa_code:
+                    type: string
+                    description: Only in dev/test mode
+        '401':
+          description: Invalid credentials
+
+  /api/v1/auth/verify_mfa:
+    post:
+      tags: [1. Authentication]
+      summary: Verify MFA code
+      description: Verify MFA code and get JWT token
+      operationId: verifyMfa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_token, code]
+              properties:
+                session_token:
+                  type: string
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+            example:
+              session_token: "abc123..."
+              code: "123456"
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                    description: JWT Bearer token
+                  expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          description: Invalid MFA code
+
+  /api/v1/me:
+    get:
+      tags: [1. Authentication]
+      summary: Get current user
+      description: Get authenticated user information
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  client:
+                    $ref: '#/components/schemas/Client'
+        '401':
+          description: Unauthorized
+
+  # ==================== PORTFOLIOS SERVICE ====================
+  /api/v1/portfolio:
+    get:
+      tags: [2. Portfolio]
+      summary: Get portfolio
+      description: Get client's portfolio with balances
+      operationId: getPortfolio
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Portfolio details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  portfolio:
+                    $ref: '#/components/schemas/Portfolio'
+        '401':
+          description: Unauthorized
+
+  /api/v1/deposits:
+    get:
+      tags: [2. Portfolio]
+      summary: List deposits
+      description: Get all deposits for the client
+      operationId: listDeposits
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of deposits
+    post:
+      tags: [2. Portfolio]
+      summary: Create deposit
+      description: Create a new deposit
+      operationId: createDeposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Unique key to prevent duplicate deposits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  minimum: 0.01
+                currency:
+                  type: string
+                  default: USD
+            example:
+              amount: 10000.00
+              currency: "USD"
+      responses:
+        '201':
+          description: Deposit created
+        '401':
+          description: Unauthorized
+        '422':
+          description: Validation error
+
+  # ==================== ORDERS SERVICE ====================
+  /api/v1/orders:
+    get:
+      tags: [3. Orders]
+      summary: List orders
+      description: Get all orders for the authenticated client
+      operationId: listOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, working, filled, partially_filled, cancelled]
+        - name: symbol
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags: [3. Orders]
+      summary: Place order
+      description: Place a new buy or sell order
+      operationId: placeOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order]
+              properties:
+                order:
+                  type: object
+                  required: [symbol, direction, order_type, quantity]
+                  properties:
+                    symbol:
+                      type: string
+                      example: AAPL
+                    direction:
+                      type: string
+                      enum: [buy, sell]
+                    order_type:
+                      type: string
+                      enum: [market, limit]
+                    quantity:
+                      type: integer
+                      minimum: 1
+                    price:
+                      type: number
+                      description: Required for limit orders
+                    time_in_force:
+                      type: string
+                      enum: [DAY, GTC, IOC, FOK]
+                      default: DAY
+            example:
+              order:
+                symbol: "AAPL"
+                direction: "buy"
+                order_type: "limit"
+                quantity: 10
+                price: 175.00
+                time_in_force: "DAY"
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Validation error
+
+  /api/v1/orders/{id}:
+    get:
+      tags: [3. Orders]
+      summary: Get order details
+      description: Get details of a specific order
+      operationId: getOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+
+  /api/v1/orders/{id}/cancel:
+    delete:
+      tags: [3. Orders]
+      summary: Cancel order
+      description: Cancel a pending order
+      operationId: cancelOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order cancelled
+        '400':
+          description: Cannot cancel order
+        '404':
+          description: Order not found
+
+  /api/v1/trades:
+    get:
+      tags: [3. Orders]
+      summary: List trades
+      description: Get all executed trades for the authenticated client
+      operationId: listTrades
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of trades
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  trades:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Trade'
+        '401':
+          description: Unauthorized
+
+  # ==================== HEALTH CHECKS ====================
+  /health:
+    get:
+      tags: [4. System]
+      summary: Health check
+      description: Check service health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+
+  /metrics:
+    get:
+      tags: [4. System]
+      summary: Prometheus metrics
+      description: Get Prometheus metrics for monitoring
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus metrics in text format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+tags:
+  - name: 1. Authentication
+    description: Client registration, login, and MFA
+  - name: 2. Portfolio
+    description: Portfolio management and deposits
+  - name: 3. Orders
+    description: Order placement and trade execution
+  - name: 4. System
+    description: Health checks and monitoring

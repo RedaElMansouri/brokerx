@@ -13,11 +13,20 @@ module Api
         )
 
         if result.success?
-          render json: {
+          response_data = {
             message: 'MFA code sent to your email',
             mfa_required: true,
             session_token: result.session_token
           }
+          
+          # Include MFA code in development/test for easier testing
+          if Rails.env.development? || Rails.env.test?
+            client = Client.find_by(email: params[:email].downcase.strip)
+            mfa_record = client&.mfa_codes&.where('expires_at > ?', Time.current)&.last
+            response_data[:mfa_code] = mfa_record&.code
+          end
+          
+          render json: response_data
         else
           render json: {
             error: 'Authentication failed',
