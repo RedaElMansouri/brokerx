@@ -1,0 +1,87 @@
+@startuml sequence_client_registration
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Séquence: Inscription Client
+caption Flux d'inscription avec vérification email
+
+actor "Utilisateur" as user
+participant "API Gateway" as gateway
+participant "ClientsFacade" as facade
+participant "RegisterClient\nUseCase" as usecase
+participant "RegistrationService" as service
+entity "Client" as client
+entity "Email" as email
+entity "Password" as password
+entity "VerificationToken" as token
+database "Clients DB" as db
+participant "VerificationMailer" as mailer
+
+== Inscription ==
+user -> gateway: POST /clients/register
+note right: { email, password, name }
+
+gateway -> facade: register(params)
+facade -> usecase: execute(params)
+
+usecase -> service: register(email, password, name)
+
+== Création des Value Objects ==
+service -> email: new(email_string)
+alt Email invalide
+    email --> service: raise InvalidEmail
+    service --> usecase: Failure(:invalid_email)
+    usecase --> facade: Result.failure
+    facade --> gateway: 422 Error
+    gateway --> user: Error: Invalid email format
+end
+
+service -> password: new(raw_password)
+note right: Hash bcrypt\nValidation force
+
+alt Password faible
+    password --> service: raise WeakPassword
+    service --> usecase: Failure(:weak_password)
+    usecase --> facade: Result.failure
+    facade --> user: Error: Password too weak
+end
+
+== Vérification Unicité ==
+service -> db: SELECT * WHERE email = ?
+alt Email existe déjà
+    db --> service: Client found
+    service --> usecase: Failure(:email_taken)
+    usecase --> facade: Result.failure
+    facade --> user: Error: Email already registered
+end
+
+== Création Entités ==
+service -> client: new(email, password, name)
+service -> token: generate()
+note right: token = SecureRandom\nexpires_at = +24h
+
+service -> client: add_verification_token(token)
+service -> db: INSERT client
+service -> db: INSERT verification_token
+
+== Envoi Email ==
+service -> mailer: verify_email(client, token)
+mailer --> user: Email avec lien de vérification
+
+service --> usecase: Success(client)
+usecase --> facade: Result.success(client)
+facade --> gateway: Client JSON
+gateway --> user: 201 Created\n"Vérifiez votre email"
+
+== Vérification Email (plus tard) ==
+user -> gateway: GET /verify?token=xxx
+gateway -> facade: verify_email(token)
+facade -> service: verify(token)
+service -> db: SELECT token
+service -> client: verify_email!
+service -> db: UPDATE client.verified_at
+service --> facade: Success
+facade --> gateway: 200 OK
+gateway --> user: "Email vérifié!"
+
+@enduml

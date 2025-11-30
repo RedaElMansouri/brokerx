@@ -1,0 +1,101 @@
+@startuml deployment_microservices
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title BrokerX - Diagramme de Déploiement Microservices
+caption Architecture Docker Compose
+
+' ================== CLIENTS ==================
+node "Clients" as clients #LightBlue {
+    component "Web Browser" as browser
+    component "Mobile App" as mobile
+    component "WebSocket" as ws
+}
+
+' ================== DOCKER HOST ==================
+node "Docker Host" as docker {
+    
+    ' API Gateway
+    node "API Gateway" as gateway_node #LightYellow {
+        component "Kong Gateway\n:8080" as kong #Orange
+    }
+    
+    ' Microservices
+    node "Microservices Layer" as ms_layer #LightGreen {
+        
+        node "Clients Service\n:3001" as clients_node #PaleGreen {
+            component "Rails API" as clients_api
+            component "JWT Auth" as jwt
+            component "MFA" as mfa
+        }
+        
+        node "Portfolios Service\n:3002" as portfolios_node #PaleGreen {
+            component "Rails API" as portfolios_api
+            component "Transactions" as txn
+        }
+        
+        node "Orders Service\n:3003" as orders_node #PaleGreen {
+            component "Rails API" as orders_api
+            component "MatchingEngine" as matching
+            component "ActionCable" as cable
+        }
+    }
+    
+    ' Databases
+    node "Data Layer" as data_layer #LightPink {
+        database "PostgreSQL\nClients\n:5433" as db_clients #Pink
+        database "PostgreSQL\nPortfolios\n:5434" as db_portfolios #Pink
+        database "PostgreSQL\nOrders\n:5435" as db_orders #Pink
+        database "Redis\n:6379" as redis #Red
+    }
+    
+    ' Observability
+    node "Observability" as obs_layer #LightGray {
+        component "Prometheus\n:9090" as prometheus
+        component "Grafana\n:3100" as grafana
+        component "Jaeger\n:16686" as jaeger
+        component "Loki\n:3101" as loki
+    }
+}
+
+' ================== CONNECTIONS ==================
+
+' Client to Gateway
+browser --> kong : "HTTPS"
+mobile --> kong : "HTTPS"
+ws --> kong : "WSS"
+
+' Gateway to Services
+kong --> clients_api : "/api/v1/clients\n/api/v1/auth"
+kong --> portfolios_api : "/api/v1/portfolios\n/api/v1/deposits"
+kong --> orders_api : "/api/v1/orders\n/cable"
+
+' Inter-service communication
+orders_api ..> clients_api : "HTTP\nvalidate client"
+orders_api ..> portfolios_api : "HTTP\nreserve funds"
+portfolios_api ..> clients_api : "HTTP\nverify client"
+
+' Services to Databases
+clients_api --> db_clients : "TCP:5432"
+portfolios_api --> db_portfolios : "TCP:5432"
+orders_api --> db_orders : "TCP:5432"
+
+' Services to Redis
+clients_api --> redis : "Sessions\nMFA codes"
+portfolios_api --> redis : "Cache"
+orders_api --> redis : "ActionCable\nCache"
+
+' WebSocket
+cable --> ws : "Real-time\nupdates"
+
+' Observability connections
+clients_api --> prometheus : "/metrics"
+portfolios_api --> prometheus : "/metrics"
+orders_api --> prometheus : "/metrics"
+kong --> prometheus : "/metrics"
+prometheus --> grafana
+loki --> grafana
+jaeger --> grafana
+
+@enduml

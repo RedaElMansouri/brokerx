@@ -1,0 +1,62 @@
+@startuml activity_deposit
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'Activité: Dépôt de Fonds
+caption Flux de dépôt avec validation et mise à jour du solde
+
+|Client|
+start
+:Demander dépôt(amount);
+
+|DepositFunds UseCase|
+:execute(portfolio_id, amount);
+
+partition "Validation" #LightBlue {
+    if (amount > 0?) then (oui)
+        :Montant valide;
+    else (non)
+        :Retourner erreur "Invalid amount";
+        stop
+    endif
+    
+    :Chercher Portfolio;
+    if (Portfolio existe?) then (oui)
+        :Portfolio trouvé;
+    else (non)
+        :Retourner erreur "Portfolio not found";
+        stop
+    endif
+}
+
+|Portfolio|
+partition "Dépôt" #LightGreen {
+    :deposit(amount);
+    :cash_balance += amount;
+    
+    :Créer Transaction;
+    note right
+        transaction_type: :deposit
+        amount: +amount
+        timestamp: now
+    end note
+}
+
+partition "Persistance" #LightYellow {
+    :Sauvegarder Portfolio;
+    :Sauvegarder Transaction;
+    
+    |PortfolioRepository|
+    :save(portfolio);
+    :DB UPDATE;
+}
+
+|DepositFunds UseCase|
+:Retourner Result.success;
+
+|Client|
+:Afficher nouveau solde;
+:Transaction confirmée;
+stop
+
+@enduml

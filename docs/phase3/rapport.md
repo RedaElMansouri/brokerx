@@ -112,7 +112,7 @@ UC-07 Flow avec TradingSaga + Outbox:
 
 **Diagramme de séquence TradingSaga**:
 
-![TradingSaga Sequence](puml/trading_saga_sequence.png)
+![TradingSaga Sequence](assets/trading_saga_sequence.png)
 
 **Événements émis**:
 | Type | Source | Description |
@@ -148,7 +148,7 @@ UC-08 avec Load Balancing:
 
 **Diagramme du flux Outbox (UC-07/UC-08)**:
 
-![Outbox Event Flow](puml/outbox_event_flow.png)
+![Outbox Event Flow](assets/outbox_event_flow.png)
 
 ---
 
@@ -188,7 +188,7 @@ end
 
 **Architecture déployée**:
 
-![Load Balancing Architecture](puml/load_balancing_architecture.png)
+![Load Balancing Architecture](assets/load_balancing_architecture.png)
 
 **Choix de l'algorithme `least_conn`**:
 - Distribue vers l'instance avec le moins de connexions actives
@@ -442,7 +442,7 @@ curl http://localhost/api/v1/health # → 200 OK
 
 ### 6.1 Architecture Observabilité
 
-![Observability Stack](puml/observability_stack.png)
+![Observability Stack](assets/observability_stack.png)
 
 ### 6.2 Nouvelles Métriques Prometheus
 
@@ -461,11 +461,11 @@ outbox_events_total{type="saga.*", status}
 
 **Targets Prometheus** (toutes les cibles UP):
 
-![Prometheus Targets](screenshots/prometheus_targets.png)
+![Prometheus Targets](assets/prometheus_targets.png)
 
 **Expression Latence P95**:
 
-![Prometheus Latency P95](screenshots/prometheus_expressions_latency.png)
+![Prometheus Latency P95](assets/prometheus_expressions_latency.png)
 
 ### 6.4 Dashboards Grafana
 
@@ -473,7 +473,7 @@ outbox_events_total{type="saga.*", status}
 
 Vue d'ensemble des 4 Golden Signals (Latence, Trafic, Erreurs, Saturation):
 
-![Grafana Golden Signals](screenshots/grafana_golden_signals.png)
+![Grafana Golden Signals](assets/grafana_golden_signals.png)
 
 **Métriques observées**:
 - **RPS (req/s)**: ~2.93 requêtes par seconde
@@ -485,7 +485,7 @@ Vue d'ensemble des 4 Golden Signals (Latence, Trafic, Erreurs, Saturation):
 
 **Vue globale du Gateway**:
 
-![Grafana Kong Gateway 1](screenshots/grafana_kong_gateway_1.png)
+![Grafana Kong Gateway 1](assets/grafana_kong_gateway_1.png)
 
 **Métriques détaillées**:
 - **Gateway RPS**: Trafic à travers Kong
@@ -495,7 +495,7 @@ Vue d'ensemble des 4 Golden Signals (Latence, Trafic, Erreurs, Saturation):
 
 **Vue complète avec ressources système**:
 
-![Grafana Kong Gateway 2](screenshots/grafana_kong_gateway_2.png)
+![Grafana Kong Gateway 2](assets/grafana_kong_gateway_2.png)
 
 **Métriques système**:
 - **Bandwidth by service**: ~10-15 KB/s egress/ingress
@@ -622,13 +622,13 @@ brokerx/
     │   └── arc42/arc42.md          # MODIFIÉ - Sections 9, 10, 11
     └── phase3/
         ├── rapport.md              # CE RAPPORT
-        ├── puml/                   # Diagrammes PlantUML
-        └── screenshots/            # Captures Grafana/Prometheus
+        ├── assets/                   # Diagrammes PlantUML
+        └── assets/            # Captures Grafana/Prometheus
 ```
 
 ### B. Diagrammes PlantUML
 
-Les diagrammes suivants sont disponibles dans `docs/phase3/puml/`:
+Les diagrammes suivants sont disponibles dans `docs/phase3/assets/`:
 
 | Fichier | Description |
 |---------|-------------|

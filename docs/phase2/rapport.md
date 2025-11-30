@@ -69,21 +69,21 @@ Les diagrammes UML (PNG) correspondants sont intégrés en Annexes D.
 - Logique/Processus/Développement/Physique/Scénarios: `docs/architecture/4plus1_views/`
 
 ## Annexes B — Captures (preuves)
-- Grafana – Vue d’ensemble
-  Aperçu « Golden Signals » (latence p95, erreurs, RPS, saturation) pendant 5–15 minutes d’un run k6.
-![Grafana – Vue d’ensemble](screenshots/grafana_overview.png)
+- Grafana – Vue d'ensemble
+  Aperçu « Golden Signals » (latence p95, erreurs, RPS, saturation) pendant 5–15 minutes d'un run k6.
+![Grafana – Vue d'ensemble](assets/grafana_overview.png)
 
 - Grafana – Panneaux Gateway
-  Focus Gateway/Kong: connexions, RPS, latence upstream; illustre l’équilibrage entre orders‑a/b (en‑tête X‑Instance côté k6).
-![Grafana – Panneaux Gateway](screenshots/grafana_gateway_panels.png)
+  Focus Gateway/Kong: connexions, RPS, latence upstream; illustre l'équilibrage entre orders‑a/b (en‑tête X‑Instance côté k6).
+![Grafana – Panneaux Gateway](assets/grafana_gateway_panels.png)
 
 - Prometheus – Targets
   Toutes les cibles doivent être UP (services et kong) pour alimenter Grafana.
-![Prometheus – Targets](screenshots/prometheus_targets.png)
+![Prometheus – Targets](assets/prometheus_targets.png)
 
 - Prometheus – p95
   Requête type (histogram_quantile sur http_request_duration_seconds_bucket) pour visualiser p95.
-![Prometheus – p95](screenshots/prometheus_expressions_latency.png)
+![Prometheus – p95](assets/prometheus_expressions_latency.png)
 
 - k6 direct microservices
   Exécution locale ciblant directement `portfolios` et `orders-a` (réseaux compose); p95 < 600 ms, 0 % échec.
@@ -313,32 +313,32 @@ Voir README racine, section « Phase 2 — Reproductibilité (< 30 min) ».
 
 - UC‑01 — Inscription & Vérification
 
-![UC01_inscription_verification](../use_cases/puml/UC01_inscription_verification.png)
+![UC01_inscription_verification](../use_cases/assets/UC01_inscription_verification.png)
   Création de compte → statut Pending → validation par lien/email → statut Active.
 
 - UC‑02 — Authentification MFA
 
-![UC02_authentification_mfa](../use_cases/puml/UC02_authentification_mfa.png)
+![UC02_authentification_mfa](../use_cases/assets/UC02_authentification_mfa.png)
   Login (email+mot de passe) → envoi code MFA → vérification → émission d’un JWT HS256.
 
 - UC‑05 — Placement d’ordre
 
-![UC05_placement_ordre](../use_cases/puml/UC05_placement_ordre.png)
+![UC05_placement_ordre](../use_cases/assets/UC05_placement_ordre.png)
   Contrôles pré‑trade, réservation de fonds (ACHAT), persistance, mise en file vers le moteur d’appariement et ACK.
 
 ### UC réalisés — Phase 2
 
 - UC‑03 — Dépôt de fonds idempotent
 
-![UC03_depot_fonds_idempotent](../use_cases/puml/UC03_depot_fonds_idempotent.png)
+![UC03_depot_fonds_idempotent](../use_cases/assets/UC03_depot_fonds_idempotent.png)
   Dépôt avec `Idempotency-Key` garantissant l’absence de doublon (retourne le résultat initial si répété).
 
 - UC‑04 — Données de marché en temps réel (ActionCable)
 
-![UC04_donnees_marche_temps_reel](../use_cases/puml/UC04_donnees_marche_temps_reel.png)
+![UC04_donnees_marche_temps_reel](../use_cases/assets/UC04_donnees_marche_temps_reel.png)
   Connexion WS `/cable?token=JWT`, abonnement `MarketChannel`, diffusion de messages `quote`/`orderbook`/`status`.
 
 - UC‑06 — Modifier / Annuler un ordre
 
-![UC06_modifier_annuler_ordre](../use_cases/puml/UC06_modifier_annuler_ordre.png)
+![UC06_modifier_annuler_ordre](../use_cases/assets/UC06_modifier_annuler_ordre.png)
   Remplacement/annulation sous verrouillage optimiste (`lock_version`), libération des fonds réservés le cas échéant.

@@ -1,0 +1,84 @@
+@startuml state_order_lifecycle
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'États: Cycle de Vie d'un Ordre
+caption États et transitions d'un ordre de trading
+
+[*] --> PENDING : create_order()
+
+state PENDING {
+    PENDING : Ordre créé
+    PENDING : En attente de soumission
+}
+
+PENDING --> WORKING : submit_to_matching()
+PENDING --> REJECTED : validation_failed()
+PENDING --> CANCELLED : cancel() [avant soumission]
+
+state WORKING {
+    WORKING : Ordre dans le carnet
+    WORKING : En attente de match
+}
+
+WORKING --> PARTIALLY_FILLED : partial_execution()
+WORKING --> FILLED : full_execution()
+WORKING --> CANCELLED : cancel()
+WORKING --> EXPIRED : expiration_time_reached()
+
+state PARTIALLY_FILLED {
+    PARTIALLY_FILLED : Exécution partielle
+    PARTIALLY_FILLED : filled_qty < quantity
+}
+
+PARTIALLY_FILLED --> PARTIALLY_FILLED : additional_execution()
+PARTIALLY_FILLED --> FILLED : final_execution()
+PARTIALLY_FILLED --> CANCELLED : cancel()
+
+state FILLED {
+    FILLED : Ordre complètement exécuté
+    FILLED : filled_qty == quantity
+}
+
+state CANCELLED {
+    CANCELLED : Ordre annulé
+    CANCELLED : Par client ou système
+}
+
+state REJECTED {
+    REJECTED : Ordre refusé
+    REJECTED : Validation échouée
+}
+
+state EXPIRED {
+    EXPIRED : Ordre expiré
+    EXPIRED : Temps limite atteint
+}
+
+FILLED --> [*]
+CANCELLED --> [*]
+REJECTED --> [*]
+EXPIRED --> [*]
+
+note right of PENDING
+    Transitions possibles:
+    - WORKING (soumis)
+    - REJECTED (invalide)
+    - CANCELLED (annulé)
+end note
+
+note right of WORKING
+    L'ordre peut rester ici
+    indéfiniment jusqu'à:
+    - Exécution
+    - Annulation
+    - Expiration
+end note
+
+note right of PARTIALLY_FILLED
+    Peut recevoir plusieurs
+    exécutions partielles
+    avant d'être FILLED
+end note
+
+@enduml

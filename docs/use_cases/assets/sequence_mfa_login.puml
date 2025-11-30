@@ -1,0 +1,106 @@
+@startuml sequence_mfa_login
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Séquence: Authentification MFA
+caption Flux de connexion avec authentification à deux facteurs
+
+actor "Client" as user
+participant "API Gateway" as gateway
+participant "ClientsFacade" as facade
+participant "AuthenticationService" as auth
+entity "Client" as client
+entity "MfaCode" as mfa
+database "Clients DB" as db
+participant "MfaMailer" as mailer
+
+== Phase 1: Login Initial ==
+user -> gateway: POST /login
+note right: { email, password }
+
+gateway -> facade: authenticate(email, password)
+facade -> auth: authenticate(email, password)
+
+auth -> db: SELECT client WHERE email = ?
+
+alt Client non trouvé
+    db --> auth: nil
+    auth --> facade: Failure(:invalid_credentials)
+    facade --> gateway: 401 Unauthorized
+    gateway --> user: Error
+end
+
+db --> auth: client
+auth -> client: verify_password(password)
+
+alt Password incorrect
+    client --> auth: false
+    auth -> client: increment_failed_attempts!
+    
+    alt Compte verrouillé (5+ tentatives)
+        auth --> facade: Failure(:account_locked)
+        facade --> user: "Compte verrouillé 30 min"
+    else
+        auth --> facade: Failure(:invalid_credentials)
+        facade --> user: "Email ou mot de passe incorrect"
+    end
+end
+
+client --> auth: true
+
+alt Email non vérifié
+    auth --> facade: Failure(:email_not_verified)
+    facade --> user: "Veuillez vérifier votre email"
+end
+
+== Phase 2: Envoi Code MFA ==
+auth -> mfa: generate()
+note right
+    code: 6 chiffres
+    expires_at: +10 min
+    used: false
+end note
+
+auth -> db: INSERT mfa_code
+auth -> mailer: send_mfa_code(client, code)
+mailer --> user: Email avec code MFA
+
+auth --> facade: :mfa_required
+facade --> gateway: 200 { mfa_required: true }
+gateway --> user: "Code envoyé par email"
+
+== Phase 3: Vérification MFA ==
+user -> gateway: POST /verify-mfa
+note right: { email, code }
+
+gateway -> facade: verify_mfa(email, code)
+facade -> auth: verify_mfa(email, code)
+
+auth -> db: SELECT mfa_code WHERE email AND code
+
+alt Code invalide ou expiré
+    db --> auth: nil OR expired
+    auth --> facade: Failure(:invalid_mfa_code)
+    facade --> user: "Code invalide ou expiré"
+end
+
+db --> auth: mfa_code (valid)
+auth -> mfa: mark_as_used!
+auth -> db: UPDATE mfa_code.used = true
+
+== Phase 4: Génération Tokens ==
+auth -> auth: generate_session_token()
+auth -> auth: generate_refresh_token()
+auth -> client: reset_failed_attempts!
+auth -> db: UPDATE client
+
+auth --> facade: Success(tokens)
+facade --> gateway: 200 { session_token, refresh_token }
+gateway --> user: Authentifié!
+
+note over user
+    Stocker tokens pour
+    requêtes authentifiées
+end note
+
+@enduml

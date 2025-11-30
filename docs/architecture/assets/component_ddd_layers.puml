@@ -1,0 +1,138 @@
+@startuml component_ddd_layers
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Composants: Couches DDD
+caption Architecture en couches selon Domain-Driven Design
+
+package "Presentation Layer" #LightBlue {
+    [Web Controllers] as web_ctrl
+    [API Controllers] as api_ctrl
+    [WebSocket Channels] as channels
+    [Views/Templates] as views
+}
+
+package "Application Layer" #LightGreen {
+    package "Facades" {
+        [ClientsFacade] as clients_facade
+        [OrdersFacade] as orders_facade
+        [PortfoliosFacade] as portfolios_facade
+    }
+    
+    package "Use Cases" {
+        [RegisterClient] as uc_register
+        [PlaceOrder] as uc_order
+        [DepositFunds] as uc_deposit
+        [GetPortfolio] as uc_portfolio
+    }
+    
+    package "DTOs" {
+        [OrderDTO] as dto_order
+        [ClientDTO] as dto_client
+        [PortfolioDTO] as dto_portfolio
+    }
+    
+    package "Application Services" {
+        [TradingSaga] as saga
+    }
+}
+
+package "Domain Layer" #LightYellow {
+    package "Clients Bounded Context" {
+        [Client Entity] as client
+        [Email VO] as email
+        [Password VO] as password
+        [AuthenticationService] as auth_svc
+    }
+    
+    package "Orders Bounded Context" {
+        [Order Entity] as order
+        [Execution Entity] as execution
+        [MatchingEngine] as matching
+        [OrderBook] as orderbook
+    }
+    
+    package "Portfolios Bounded Context" {
+        [Portfolio Entity] as portfolio
+        [Holding Entity] as holding
+        [Transaction VO] as transaction
+    }
+    
+    package "Shared Kernel" {
+        [Money VO] as money
+        [Quantity VO] as quantity
+        [Result] as result
+    }
+}
+
+package "Infrastructure Layer" #LightCyan {
+    package "Persistence" {
+        [ClientRepository] as repo_client
+        [OrderRepository] as repo_order
+        [PortfolioRepository] as repo_portfolio
+        [ActiveRecord Models] as ar_models
+    }
+    
+    package "External Services" {
+        [MarketDataAPI] as market_api
+        [EmailService] as email_svc
+    }
+    
+    package "Observability" {
+        [TracingService] as tracing
+        [MetricsService] as metrics
+    }
+}
+
+database "PostgreSQL" as db
+
+' Presentation to Application
+web_ctrl --> clients_facade
+api_ctrl --> orders_facade
+api_ctrl --> portfolios_facade
+
+' Facades to Use Cases
+clients_facade --> uc_register
+orders_facade --> uc_order
+portfolios_facade --> uc_deposit
+portfolios_facade --> uc_portfolio
+
+' Use Cases to Domain
+uc_register --> client
+uc_register --> auth_svc
+uc_order --> saga
+saga --> order
+saga --> matching
+uc_deposit --> portfolio
+uc_portfolio --> portfolio
+
+' Domain using Shared Kernel
+order --> money
+order --> quantity
+portfolio --> money
+holding --> quantity
+auth_svc --> result
+matching --> result
+
+' Domain to Infrastructure (via interfaces)
+client ..> repo_client : "interface"
+order ..> repo_order : "interface"
+portfolio ..> repo_portfolio : "interface"
+
+' Infrastructure implementations
+repo_client --> ar_models
+repo_order --> ar_models
+repo_portfolio --> ar_models
+ar_models --> db
+
+' Cross-cutting
+web_ctrl ..> tracing
+api_ctrl ..> metrics
+
+note bottom of "Domain Layer"
+    La couche Domain ne dépend
+    d'aucune autre couche.
+    C'est le cœur de l'application.
+end note
+
+@enduml

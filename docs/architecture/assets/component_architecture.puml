@@ -1,0 +1,101 @@
+@startuml component_architecture
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Composants: Architecture Globale
+caption Vue d'ensemble des composants et leurs interactions
+
+package "Clients" <<Cloud>> {
+    [Web Browser] as browser
+    [Mobile App] as mobile
+}
+
+package "Edge Layer" {
+    [NGINX\nLoad Balancer] as nginx
+    [Kong\nAPI Gateway] as kong
+    
+    note right of kong
+        Rate limiting
+        Authentication
+        Metrics
+    end note
+}
+
+package "Application Layer" {
+    package "Monolith" {
+        [Controllers] as controllers
+        [Facades] as facades
+        [Use Cases] as usecases
+    }
+    
+    package "Domain Layer" {
+        [Clients Domain] as clients_domain
+        [Orders Domain] as orders_domain
+        [Portfolios Domain] as portfolios_domain
+        [Shared Domain] as shared_domain
+    }
+    
+    package "Infrastructure" {
+        [Repositories] as repos
+        [External APIs] as external
+        [Event Publishers] as events
+    }
+}
+
+package "Data Layer" {
+    database "PostgreSQL\nPrimary" as db_primary
+    database "PostgreSQL\nReplica" as db_replica
+    database "Redis\nCache" as redis
+}
+
+package "Observability Stack" {
+    [Prometheus] as prometheus
+    [Grafana] as grafana
+    [Jaeger] as jaeger
+    [Loki] as loki
+}
+
+package "Messaging" {
+    queue "ActionCable\nWebSocket" as websocket
+    queue "Outbox\nPattern" as outbox
+}
+
+' Client connections
+browser --> nginx
+mobile --> nginx
+
+' Edge routing
+nginx --> kong
+kong --> controllers
+
+' Application flow
+controllers --> facades
+facades --> usecases
+usecases --> clients_domain
+usecases --> orders_domain
+usecases --> portfolios_domain
+orders_domain --> shared_domain
+portfolios_domain --> shared_domain
+
+' Infrastructure connections
+clients_domain ..> repos
+orders_domain ..> repos
+portfolios_domain ..> repos
+repos --> db_primary
+repos ..> redis : cache
+db_primary --> db_replica : replication
+
+' Events
+usecases --> outbox
+outbox --> websocket
+websocket --> browser
+
+' Observability
+controllers --> prometheus : metrics
+repos --> jaeger : traces
+controllers --> loki : logs
+prometheus --> grafana
+jaeger --> grafana
+loki --> grafana
+
+@enduml

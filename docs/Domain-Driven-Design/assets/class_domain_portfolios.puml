@@ -1,0 +1,164 @@
+@startuml class_domain_portfolios
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+
+title BrokerX - Diagramme de Classes: Domaine Portfolios
+caption Domain-Driven Design - Bounded Context Portfolios
+
+package "Domain::Portfolios" #LightBlue {
+    
+    ' ========== ENTITIES ==========
+    class Portfolio <<Entity>> <<Aggregate Root>> {
+        - id: UUID
+        - client_id: UUID
+        - name: String
+        - cash_balance: Money
+        - reserved_amount: Money
+        - created_at: DateTime
+        --
+        + available_balance(): Money
+        + total_value(): Money
+        + deposit(amount: Money): Transaction
+        + withdraw(amount: Money): Transaction
+        + reserve(amount: Money): Reservation
+        + release(reservation: Reservation): void
+        + confirm(reservation: Reservation): void
+    }
+    
+    class Holding <<Entity>> {
+        - id: UUID
+        - portfolio_id: UUID
+        - symbol: String
+        - quantity: Decimal
+        - average_cost: Money
+        --
+        + market_value(price: Decimal): Money
+        + unrealized_pnl(price: Decimal): Money
+        + add(quantity: Decimal, price: Decimal): void
+        + remove(quantity: Decimal): void
+    }
+    
+    class Transaction <<Entity>> {
+        - id: UUID
+        - portfolio_id: UUID
+        - type: TransactionType
+        - amount: Money
+        - status: TransactionStatus
+        - idempotency_key: String
+        - created_at: DateTime
+        --
+        + approve!(): void
+        + reject!(reason: String): void
+    }
+    
+    class Reservation <<Entity>> {
+        - id: UUID
+        - portfolio_id: UUID
+        - order_id: UUID
+        - amount: Money
+        - status: ReservationStatus
+        - expires_at: DateTime
+        --
+        + expired?(): Boolean
+        + release!(): void
+        + confirm!(): void
+    }
+    
+    ' ========== VALUE OBJECTS ==========
+    class Money <<Value Object>> {
+        - amount: Decimal
+        - currency: String
+        --
+        + add(other: Money): Money
+        + subtract(other: Money): Money
+        + >(other: Money): Boolean
+        + sufficient_for?(amount: Money): Boolean
+    }
+    
+    enum TransactionType <<Value Object>> {
+        DEPOSIT
+        WITHDRAWAL
+        BUY
+        SELL
+        FEE
+        DIVIDEND
+    }
+    
+    enum TransactionStatus <<Value Object>> {
+        PENDING
+        APPROVED
+        REJECTED
+        COMPLETED
+    }
+    
+    enum ReservationStatus <<Value Object>> {
+        ACTIVE
+        RELEASED
+        CONFIRMED
+        EXPIRED
+    }
+    
+    ' ========== DOMAIN SERVICES ==========
+    class DepositService <<Domain Service>> {
+        --
+        + create_deposit(portfolio_id: UUID, amount: Money, idempotency_key: String): Result<Transaction>
+        + process_deposit(transaction: Transaction): Result<Transaction>
+    }
+    
+    class WithdrawalService <<Domain Service>> {
+        --
+        + create_withdrawal(portfolio_id: UUID, amount: Money): Result<Transaction>
+        + validate_balance(portfolio: Portfolio, amount: Money): Boolean
+        + process_withdrawal(transaction: Transaction): Result<Transaction>
+    }
+    
+    class ReservationService <<Domain Service>> {
+        --
+        + reserve_funds(portfolio_id: UUID, order_id: UUID, amount: Money): Result<Reservation>
+        + release_funds(reservation_id: UUID): Result<void>
+        + confirm_reservation(reservation_id: UUID): Result<void>
+        + cleanup_expired(): Integer
+    }
+    
+    ' ========== REPOSITORY ==========
+    interface PortfolioRepository <<Repository>> {
+        + find(id: UUID): Portfolio
+        + find_by_client(client_id: UUID): List<Portfolio>
+        + save(portfolio: Portfolio): Portfolio
+    }
+    
+    interface TransactionRepository <<Repository>> {
+        + find(id: UUID): Transaction
+        + find_by_idempotency_key(key: String): Transaction
+        + find_by_portfolio(portfolio_id: UUID): List<Transaction>
+        + save(transaction: Transaction): Transaction
+    }
+}
+
+' ========== RELATIONSHIPS ==========
+Portfolio *-- Money : cash_balance
+Portfolio *-- Money : reserved_amount
+Portfolio "1" *-- "*" Holding : contains
+Portfolio "1" *-- "*" Transaction : has
+Portfolio "1" *-- "*" Reservation : has
+
+Holding *-- Money : average_cost
+Transaction *-- TransactionType
+Transaction *-- TransactionStatus
+Transaction *-- Money : amount
+Reservation *-- ReservationStatus
+Reservation *-- Money : amount
+
+DepositService --> Portfolio : modifies
+DepositService --> Transaction : creates
+DepositService --> PortfolioRepository : uses
+DepositService --> TransactionRepository : uses
+
+WithdrawalService --> Portfolio : modifies
+WithdrawalService --> Transaction : creates
+
+ReservationService --> Portfolio : modifies
+ReservationService --> Reservation : manages
+
+@enduml

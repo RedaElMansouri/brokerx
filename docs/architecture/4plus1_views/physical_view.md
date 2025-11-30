@@ -6,7 +6,7 @@ Décrire l'architecture de déploiement, la topologie réseau, et les dépendanc
 ## Architecture de Déploiement Phase 1
 
 ### Diagramme d'Architecture
-  ![Diagram_architect](diagram_architect.png)
+  ![Diagram_architect](../assets/diagram_architect.png)
 
 ### Configuration Docker
 ```dockerfile

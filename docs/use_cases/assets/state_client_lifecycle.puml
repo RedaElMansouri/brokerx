@@ -1,0 +1,80 @@
+@startuml state_client_lifecycle
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'États: Cycle de Vie d'un Client
+caption États et transitions d'un compte client
+
+[*] --> UNVERIFIED : register()
+
+state UNVERIFIED {
+    UNVERIFIED : Compte créé
+    UNVERIFIED : Email non vérifié
+    UNVERIFIED : Accès limité
+}
+
+UNVERIFIED --> ACTIVE : verify_email()
+UNVERIFIED --> UNVERIFIED : resend_verification()
+
+state ACTIVE {
+    ACTIVE : Compte vérifié
+    ACTIVE : Accès complet
+    ACTIVE : Peut trader
+}
+
+ACTIVE --> LOCKED : too_many_failed_attempts()
+ACTIVE --> SUSPENDED : admin_suspend()
+ACTIVE --> CLOSED : close_account()
+
+state LOCKED {
+    LOCKED : Compte verrouillé
+    LOCKED : Trop de tentatives
+    LOCKED : Durée: 30 minutes
+}
+
+LOCKED --> ACTIVE : lock_expired()
+LOCKED --> ACTIVE : admin_unlock()
+LOCKED --> SUSPENDED : admin_suspend()
+
+state SUSPENDED {
+    SUSPENDED : Compte suspendu
+    SUSPENDED : Action admin requise
+    SUSPENDED : Accès interdit
+}
+
+SUSPENDED --> ACTIVE : admin_reactivate()
+SUSPENDED --> CLOSED : admin_close()
+
+state CLOSED {
+    CLOSED : Compte fermé
+    CLOSED : Données archivées
+    CLOSED : État final
+}
+
+CLOSED --> [*]
+
+note right of UNVERIFIED
+    Token de vérification
+    valide 24 heures
+end note
+
+note right of LOCKED
+    Après 5 tentatives
+    de connexion échouées
+end note
+
+note right of SUSPENDED
+    Raisons possibles:
+    - Fraude suspectée
+    - Demande légale
+    - Violation ToS
+end note
+
+note left of CLOSED
+    Soft delete:
+    Les données sont
+    conservées pour
+    conformité réglementaire
+end note
+
+@enduml

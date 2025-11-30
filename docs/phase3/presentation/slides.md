@@ -305,7 +305,7 @@ Idempotency-Key: dep-12345-abc
 
 # Phase 3 — TradingSaga Flow
 
-![height:420px](../puml/trading_saga_sequence.png)
+![height:420px](../assets/trading_saga_sequence.png)
 
 ---
 
@@ -334,7 +334,7 @@ end
 
 # Phase 3 — Load Balancing
 
-![height:380px](../puml/load_balancing_architecture.png)
+![height:380px](../assets/load_balancing_architecture.png)
 
 **Algorithme:** `least_conn` (vers serveur le moins chargé)
 
@@ -342,7 +342,7 @@ end
 
 # Observabilité — Stack Complète
 
-![height:400px](../puml/observability_stack.png)
+![height:400px](../assets/observability_stack.png)
 
 ---
 
@@ -361,19 +361,19 @@ end
 
 # Dashboard Grafana — Golden Signals
 
-![height:450px](../screenshots/grafana_golden_signals.png)
+![height:450px](../assets/grafana_golden_signals.png)
 
 ---
 
 # Dashboard Grafana — Kong Gateway (1/2)
 
-![height:450px](../screenshots/grafana_kong_gateway_1.png)
+![height:450px](../assets/grafana_kong_gateway_1.png)
 
 ---
 
 # Dashboard Grafana — Kong Gateway (2/2)
 
-![height:450px](../screenshots/grafana_kong_gateway_2.png)
+![height:450px](../assets/grafana_kong_gateway_2.png)
 
 ---
 

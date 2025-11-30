@@ -1,0 +1,74 @@
+@startuml sequence_order_matching
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Séquence: Matching d'Ordres
+caption Flux complet du placement à l'exécution
+
+actor "Client" as client
+participant "API Gateway\n(Kong)" as gateway
+participant "OrdersFacade" as facade
+participant "PlaceOrder\nUseCase" as usecase
+participant "TradingSaga" as saga
+participant "MatchingEngine" as engine
+participant "OrderBook" as book
+database "Orders DB" as db
+queue "Outbox" as outbox
+participant "WebSocket" as ws
+
+== Placement de l'Ordre ==
+client -> gateway: POST /orders
+gateway -> facade: place_order(params)
+facade -> usecase: execute(order_params)
+usecase -> saga: call(params)
+
+saga -> saga: validate_order()
+alt Validation échouée
+    saga --> usecase: Failure(:validation_error)
+    usecase --> facade: Result.failure
+    facade --> gateway: 422 Error
+    gateway --> client: Error Response
+end
+
+saga -> saga: reserve_funds() [BUY only]
+note right: Appel PortfoliosService\npour réserver cash
+
+saga -> db: INSERT order (status=PENDING)
+saga -> outbox: INSERT event
+
+saga -> engine: submit(order)
+activate engine
+
+== Matching ==
+engine -> book: add_order(order)
+book -> book: match_orders()
+
+alt Ordre matched (partiel ou total)
+    book -> book: calculate_execution()
+    book --> engine: executions[]
+    
+    loop Pour chaque execution
+        engine -> db: INSERT execution
+        engine -> db: UPDATE order.filled_qty
+        engine -> outbox: INSERT execution_event
+    end
+    
+    engine -> ws: broadcast(execution)
+    ws --> client: order.executed event
+else Ordre non matched
+    book --> engine: order added to book
+    engine -> db: UPDATE order.status=WORKING
+end
+
+deactivate engine
+
+saga --> usecase: Success(order)
+usecase --> facade: Result.success(order)
+facade --> gateway: Order JSON
+gateway --> client: 201 Created
+
+== Notifications Asynchrones ==
+outbox -> ws: Publish events
+ws --> client: order.status_changed
+
+@enduml

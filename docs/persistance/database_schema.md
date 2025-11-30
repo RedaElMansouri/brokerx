@@ -4,7 +4,7 @@
 Schéma PostgreSQL conçu pour supporter les 3 bounded contexts avec intégrité référentielle, contraintes métier et préparation pour l'évolutivité.
 
 ## Diagramme Entité-Relation
-![Diagramme Entité-Relation](diagramme_entity-relation.png)
+![Diagramme Entité-Relation](assets/diagramme_entity-relation.png)
 
 
 ## Contraintes d'Intégrité Métier

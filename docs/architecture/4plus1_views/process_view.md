@@ -6,11 +6,11 @@ Décrire le parallélisme, la concurrence, et les interactions entre processus.
 ## Scénarios de Concurrence Critiques
 
 ### 1. Placement d'Ordre avec Validation Concurrence
- ![Placement_ordre_with_validation](placement_ordre_w_validation.png)
+ ![Placement_ordre_with_validation](../assets/placement_ordre_w_validation.png)
 
 ### 2. Appariement d'Ordres en Temps Réel
 
-![Appariement_ordre_realTime](appariement_ordre_realTime.png)
+![Appariement_ordre_realTime](../assets/appariement_ordre_realTime.png)
 
 ## Stratégies de Concurrence
 
@@ -38,7 +38,7 @@ end
 
 ### Architecture Événementielle (Préparation Phase 3)
 
-![Architect_Phase3](architect.png)
+![Architect_Phase3](../assets/architect.png)
 
 ## Configuration des Workers
 

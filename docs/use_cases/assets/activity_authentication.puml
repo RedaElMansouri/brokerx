@@ -1,0 +1,98 @@
+@startuml activity_authentication
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'Activité: Authentification avec MFA
+caption Flux complet d'authentification sécurisée
+
+|Client|
+start
+:Soumettre email + password;
+
+|AuthenticationService|
+:authenticate(email, password);
+
+partition "Validation Credentials" #LightBlue {
+    :Chercher Client par email;
+    
+    if (Client existe?) then (oui)
+        :Vérifier password hash;
+        if (Password correct?) then (oui)
+            if (Email vérifié?) then (oui)
+                :Credentials valides;
+            else (non)
+                :Retourner :email_not_verified;
+                |Client|
+                :Afficher erreur;
+                stop
+            endif
+        else (non)
+            :Incrémenter failed_attempts;
+            if (failed_attempts >= 5?) then (oui)
+                :Verrouiller compte;
+                :lock_until = now + 30min;
+            endif
+            :Retourner :invalid_credentials;
+            |Client|
+            :Afficher erreur;
+            stop
+        endif
+    else (non)
+        :Retourner :invalid_credentials;
+        |Client|
+        :Afficher erreur;
+        stop
+    endif
+}
+
+partition "MFA Challenge" #LightGreen {
+    :Générer MFA Code (6 chiffres);
+    :Créer MfaCode entity;
+    note right
+        code: SecureRandom
+        expires_at: +10 minutes
+        used: false
+    end note
+    
+    :Envoyer email avec code;
+    :Retourner :mfa_required;
+    
+    |Client|
+    :Recevoir code par email;
+    :Soumettre code MFA;
+    
+    |AuthenticationService|
+    :verify_mfa(email, code);
+    
+    if (Code valide et non expiré?) then (oui)
+        :Marquer code comme utilisé;
+    else (non)
+        :Retourner :invalid_mfa_code;
+        |Client|
+        :Afficher erreur;
+        stop
+    endif
+}
+
+partition "Session Creation" #LightYellow {
+    :Générer session_token;
+    :Générer refresh_token;
+    :Réinitialiser failed_attempts;
+    
+    :Retourner tokens;
+    
+    |Client|
+    :Stocker tokens;
+    :Accès autorisé;
+}
+
+stop
+
+legend right
+    |= Couleur |= Phase |
+    | <#LightBlue> | Validation credentials |
+    | <#LightGreen> | Challenge MFA |
+    | <#LightYellow> | Création session |
+endlegend
+
+@enduml

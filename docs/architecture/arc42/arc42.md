@@ -18,7 +18,7 @@ Ce document suit la structure Arc42 (sections 1 à 12) et référence la documen
 
 Illustration (4+1 — scénario clé de runtime):
 
-![Placement d’ordre et réservation de fonds](../4plus1_views/placement_ordre_w_validation.png)
+![Placement d'ordre et réservation de fonds](../assets/placement_ordre_w_validation.png)
 
 ## 2. Contraintes
 - Techniques:
@@ -41,7 +41,7 @@ Illustration (4+1 — scénario clé de runtime):
 
 Schéma ER (extrait):
 
-![ERD BrokerX+](../../persistance/diagramme_entity-relation.png)
+![ERD BrokerX+](../../persistance/assets/diagramme_entity-relation.png)
 
 ## 4. Stratégie de solution
 - Style architectural: Monolithe évolutif (Phase 1) → REST → Microservices (Phase 2)
@@ -99,17 +99,17 @@ services:
 
 Illustrations complémentaires (4+1 — vues de structure et de dépendances):
 
-![Vue logique (packages)](../4plus1_views/relation_packages.png)
+![Vue logique (packages)](../assets/relation_packages.png)
 
-![Vue logique (architecture)](../4plus1_views/architect.png)
+![Vue logique (architecture)](../assets/architect.png)
 
-![Vue logique (diagram architect)](../4plus1_views/diagram_architect.png)
+![Vue logique (diagram architect)](../assets/diagram_architect.png)
 
-![Domain — Clients](../4plus1_views/domain_clients.png)
+![Domain — Clients](../assets/domain_clients.png)
 
-![Domain — Trading](../4plus1_views/domain.trading.png)
+![Domain — Trading](../assets/domain.trading.png)
 
-![Domain — Market Data](../4plus1_views/domain_market_data.png)
+![Domain — Market Data](../assets/domain_market_data.png)
 
 Extraits de code — Contrats de repository (domaine):
 
@@ -149,7 +149,7 @@ end
 
 Vue séquence (image):
 
-![Sequence: placement ordre](../4plus1_views/placement_ordre_w_validation.png)
+![Sequence: placement ordre](../assets/placement_ordre_w_validation.png)
 
 ## 7. Vue Déploiement
 - Cible initiale: Docker Compose (app Rails, PostgreSQL)

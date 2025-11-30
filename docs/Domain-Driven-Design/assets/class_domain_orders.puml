@@ -1,0 +1,166 @@
+@startuml class_domain_orders
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+
+title BrokerX - Diagramme de Classes: Domaine Orders
+caption Domain-Driven Design - Bounded Context Trading
+
+package "Domain::Trading" #LightGreen {
+    
+    ' ========== ENTITIES ==========
+    class Order <<Entity>> <<Aggregate Root>> {
+        - id: UUID
+        - client_id: UUID
+        - portfolio_id: UUID
+        - symbol: String
+        - order_type: OrderType
+        - side: Side
+        - quantity: Decimal
+        - price: Decimal
+        - status: OrderStatus
+        - filled_quantity: Decimal
+        - version: Integer
+        - created_at: DateTime
+        --
+        + total_value(): Money
+        + remaining_quantity(): Decimal
+        + can_cancel?(): Boolean
+        + can_modify?(): Boolean
+        + fill(quantity: Decimal, price: Decimal): Execution
+        + cancel!(): void
+        + replace(price: Decimal, quantity: Decimal): Order
+    }
+    
+    class Execution <<Entity>> {
+        - id: UUID
+        - order_id: UUID
+        - quantity: Decimal
+        - price: Decimal
+        - executed_at: DateTime
+        --
+        + total_value(): Money
+    }
+    
+    ' ========== VALUE OBJECTS ==========
+    enum OrderType <<Value Object>> {
+        MARKET
+        LIMIT
+    }
+    
+    enum Side <<Value Object>> {
+        BUY
+        SELL
+    }
+    
+    enum OrderStatus <<Value Object>> {
+        PENDING
+        WORKING
+        PARTIALLY_FILLED
+        FILLED
+        CANCELLED
+        REJECTED
+    }
+    
+    class Money <<Value Object>> {
+        - amount: Decimal
+        - currency: String
+        --
+        + add(other: Money): Money
+        + subtract(other: Money): Money
+        + multiply(factor: Decimal): Money
+        + to_s(): String
+    }
+    
+    class Symbol <<Value Object>> {
+        - code: String
+        --
+        + valid?(): Boolean
+        + base_currency(): String
+        + quote_currency(): String
+    }
+    
+    ' ========== DOMAIN SERVICES ==========
+    class MatchingEngine <<Domain Service>> {
+        - order_book: OrderBook
+        --
+        + submit(order: Order): List<Execution>
+        + cancel(order_id: UUID): Boolean
+        + get_market_data(symbol: String): MarketData
+    }
+    
+    class OrderBook <<Domain Service>> {
+        - bids: SortedMap<Price, List<Order>>
+        - asks: SortedMap<Price, List<Order>>
+        --
+        + add(order: Order): void
+        + remove(order: Order): void
+        + match(order: Order): List<Execution>
+        + best_bid(): Price
+        + best_ask(): Price
+    }
+    
+    class TradingSaga <<Domain Service>> {
+        --
+        + execute(order_params: Hash): Result<Order>
+        - validate_order(): void
+        - reserve_funds(): void
+        - create_order(): void
+        - submit_to_matching(): void
+        - compensate(): void
+    }
+    
+    ' ========== EVENTS ==========
+    class OrderCreated <<Domain Event>> {
+        + order_id: UUID
+        + client_id: UUID
+        + symbol: String
+        + side: Side
+        + quantity: Decimal
+        + price: Decimal
+        + occurred_at: DateTime
+    }
+    
+    class OrderExecuted <<Domain Event>> {
+        + order_id: UUID
+        + execution_id: UUID
+        + quantity: Decimal
+        + price: Decimal
+        + occurred_at: DateTime
+    }
+    
+    class OrderCancelled <<Domain Event>> {
+        + order_id: UUID
+        + reason: String
+        + occurred_at: DateTime
+    }
+    
+    ' ========== REPOSITORY ==========
+    interface OrderRepository <<Repository>> {
+        + find(id: UUID): Order
+        + find_by_client(client_id: UUID): List<Order>
+        + save(order: Order): Order
+        + find_pending_by_symbol(symbol: String): List<Order>
+    }
+}
+
+' ========== RELATIONSHIPS ==========
+Order *-- OrderType
+Order *-- Side
+Order *-- OrderStatus
+Order *-- Symbol
+Order *-- Money : total_value
+Order "1" *-- "*" Execution : has
+
+MatchingEngine --> OrderBook : uses
+MatchingEngine --> Order : processes
+MatchingEngine --> Execution : creates
+
+TradingSaga --> Order : orchestrates
+TradingSaga --> MatchingEngine : submits to
+
+Order ..> OrderCreated : publishes
+Order ..> OrderExecuted : publishes
+Order ..> OrderCancelled : publishes
+
+@enduml

@@ -1,0 +1,88 @@
+@startuml deployment_monolith_lb
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Déploiement Monolith avec Load Balancing
+caption Architecture haute disponibilité (Phase 3)
+
+' ================== CLIENTS ==================
+node "Clients" as clients #LightBlue {
+    component "Web Browser" as browser
+    component "WebSocket Client" as wsclient
+}
+
+' ================== DOCKER HOST ==================
+node "Docker Host" as docker {
+    
+    ' API Gateway
+    node "API Gateway" #LightYellow {
+        component "Kong\n:8080" as kong #Orange
+        note right of kong
+            Rate Limiting
+            JWT Validation
+            API Key Auth
+            CORS
+        end note
+    }
+    
+    ' Load Balancer
+    node "Load Balancer" #LightGreen {
+        component "Nginx\n:3000" as nginx #Green
+        note right of nginx
+            least_conn algorithm
+            Health checks
+            WebSocket support
+        end note
+    }
+    
+    ' Application Instances
+    node "Application Cluster" as app_cluster #LightCyan {
+        component "Rails App 1\n:3101" as app1 #Cyan
+        component "Rails App 2\n:3102" as app2 #Cyan
+        component "Rails App 3\n:3103" as app3 #Cyan
+    }
+    
+    ' Data Layer
+    node "Data Layer" #LightPink {
+        database "PostgreSQL\n:5432" as postgres #Pink
+        database "Redis\n:6379" as redis #Red
+    }
+    
+    ' Observability
+    node "Observability" #LightGray {
+        component "Prometheus\n:9090" as prometheus
+        component "Grafana\n:3100" as grafana
+    }
+}
+
+' ================== CONNECTIONS ==================
+
+browser --> kong : "HTTPS"
+wsclient --> nginx : "WSS"
+
+kong --> nginx : "HTTP Proxy"
+
+nginx --> app1 : "HTTP"
+nginx --> app2 : "HTTP"
+nginx --> app3 : "HTTP"
+
+app1 --> postgres
+app2 --> postgres
+app3 --> postgres
+
+app1 --> redis : "Sessions\nCache\nPub/Sub"
+app2 --> redis
+app3 --> redis
+
+app1 --> prometheus : "/metrics"
+app2 --> prometheus : "/metrics"
+app3 --> prometheus : "/metrics"
+prometheus --> grafana
+
+note bottom of app_cluster
+    Distribution équilibrée
+    ~33% par instance
+    Sessions partagées via Redis
+end note
+
+@enduml

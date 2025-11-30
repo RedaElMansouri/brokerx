@@ -1,0 +1,106 @@
+@startuml activity_trading_saga
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'Activité: TradingSaga avec Compensation
+caption Pattern Saga pour transactions distribuées
+
+|TradingSaga|
+start
+:Recevoir OrderParams;
+note right
+    client_id
+    portfolio_id
+    symbol
+    side (buy/sell)
+    quantity
+    price
+    order_type
+end note
+
+partition "Phase 1: Validation" #LightBlue {
+    :validate_order();
+    if (Ordre valide?) then (oui)
+        :Émettre saga.step.completed;
+    else (non)
+        :Émettre saga.step.failed;
+        :Retourner erreur;
+        stop
+    endif
+}
+
+partition "Phase 2: Réservation" #LightGreen {
+    if (Side == BUY?) then (oui)
+        :reserve_funds();
+        :Appeler Portfolios Service;
+        
+        if (Réservation OK?) then (oui)
+            :Stocker reservation_id;
+            :Émettre saga.step.completed;
+        else (non)
+            :Émettre saga.step.failed;
+            #Pink:COMPENSATION;
+            :Aucune action (rien à compenser);
+            :Retourner erreur;
+            stop
+        endif
+    else (non, SELL)
+        :Pas de réservation nécessaire;
+    endif
+}
+
+partition "Phase 3: Création" #LightYellow {
+    :create_order();
+    :Persister Order en DB;
+    :Créer événement Outbox;
+    
+    if (Création OK?) then (oui)
+        :Stocker order_id;
+        :Émettre saga.step.completed;
+    else (non)
+        :Émettre saga.step.failed;
+        #Pink:COMPENSATION;
+        :release_funds(reservation_id);
+        :Libérer les fonds réservés;
+        :Retourner erreur;
+        stop
+    endif
+}
+
+partition "Phase 4: Soumission" #LightCyan {
+    :submit_to_matching();
+    :Envoyer au MatchingEngine;
+    
+    if (Soumission OK?) then (oui)
+        :Émettre saga.step.completed;
+        :Émettre saga.completed;
+    else (non)
+        :Émettre saga.step.failed;
+        #Pink:COMPENSATION;
+        fork
+            :cancel_order(order_id);
+            :Marquer ordre CANCELLED;
+        fork again
+            :release_funds(reservation_id);
+            :Libérer les fonds;
+        end fork
+        :Émettre saga.failed;
+        :Retourner erreur;
+        stop
+    endif
+}
+
+:Retourner Order;
+:Status = WORKING | FILLED;
+stop
+
+legend right
+    |= Couleur |= Signification |
+    | <#LightBlue> | Étape de validation |
+    | <#LightGreen> | Étape de réservation |
+    | <#LightYellow> | Étape de création |
+    | <#LightCyan> | Étape de soumission |
+    | <#Pink> | Compensation (rollback) |
+endlegend
+
+@enduml

@@ -110,7 +110,7 @@ UC-07 Flow avec TradingSaga + Outbox:
 
 **Diagramme de séquence TradingSaga**:
 
-![TradingSaga Sequence](puml/trading_saga_sequence.png)
+![TradingSaga Sequence](assets/trading_saga_sequence.png)
 
 **Événements émis**:
 | Type | Source | Description |
@@ -146,7 +146,7 @@ UC-08 avec Load Balancing:
 
 **Diagramme du flux Outbox (UC-07/UC-08)**:
 
-![Outbox Event Flow](puml/outbox_event_flow.png)
+![Outbox Event Flow](assets/outbox_event_flow.png)
 
 ---
 
@@ -186,7 +186,7 @@ end
 
 **Architecture déployée**:
 
-![Load Balancing Architecture](puml/load_balancing_architecture.png)
+![Load Balancing Architecture](assets/load_balancing_architecture.png)
 
 **Choix de l'algorithme `least_conn`**:
 - Distribue vers l'instance avec le moins de connexions actives
@@ -402,7 +402,7 @@ curl http://localhost/api/v1/health # → 200 OK
 
 ### 6.1 Architecture Observabilité
 
-![Observability Stack](puml/observability_stack.png)
+![Observability Stack](assets/observability_stack.png)
 
 ### 6.2 Nouvelles Métriques Prometheus
 
@@ -421,21 +421,21 @@ outbox_events_total{type="saga.*", status}
 
 **Targets Prometheus** (toutes les cibles UP):
 
-![Prometheus Targets](screenshots/prometheus_targets.png)
+![Prometheus Targets](assets/prometheus_targets.png)
 
 **Expression Latence P95**:
 
-![Prometheus Latency P95](screenshots/prometheus_expressions_latency.png)
+![Prometheus Latency P95](assets/prometheus_expressions_latency.png)
 
 ### 6.4 Dashboards Grafana
 
 **Vue d'ensemble Golden Signals**:
 
-![Grafana Overview](screenshots/grafana_overview.png)
+![Grafana Overview](assets/grafana_overview.png)
 
 **Panneaux Gateway/Kong**:
 
-![Grafana Gateway Panels](screenshots/grafana_gateway_panels.png)
+![Grafana Gateway Panels](assets/grafana_gateway_panels.png)
 
 ### 6.5 Dashboards Recommandés
 
@@ -537,7 +537,7 @@ brokerx/
 
 ### B. Diagrammes PlantUML
 
-Les diagrammes suivants ont été créés dans `docs/phase2/puml/`:
+Les diagrammes suivants ont été créés dans `docs/phase2/assets/`:
 
 | Fichier | Description |
 |---------|-------------|

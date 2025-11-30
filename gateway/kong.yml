@@ -13,6 +13,25 @@ plugins:
       upstream_health_metrics: true
 
 services:
+  # Swagger UI - served from clients service
+  - name: swagger
+    url: http://clients-service:3000
+    routes:
+      - name: swagger-routes
+        paths:
+          - /swagger
+          - /swagger.html
+          - /openapi.yaml
+        strip_path: false
+        methods: [GET]
+    plugins:
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: [GET, OPTIONS]
+          headers: ["Content-Type"]
+          credentials: false
+
   # Clients/Authentication service
   - name: clients
     url: http://clients-service:3000

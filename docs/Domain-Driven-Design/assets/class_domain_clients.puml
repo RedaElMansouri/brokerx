@@ -1,0 +1,116 @@
+@startuml class_domain_clients
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+
+title BrokerX - Diagramme de Classes: Domaine Clients
+caption Domain-Driven Design - Bounded Context Clients
+
+package "Domain::Clients" #LightYellow {
+    
+    ' ========== ENTITIES ==========
+    class Client <<Entity>> <<Aggregate Root>> {
+        - id: UUID
+        - email: String
+        - first_name: String
+        - last_name: String
+        - password_digest: String
+        - verified: Boolean
+        - mfa_enabled: Boolean
+        - mfa_secret: String
+        - verification_token: String
+        - created_at: DateTime
+        - updated_at: DateTime
+        --
+        + full_name(): String
+        + verify!(): void
+        + enable_mfa(secret: String): void
+        + disable_mfa(): void
+        + authenticate(password: String): Boolean
+    }
+    
+    ' ========== VALUE OBJECTS ==========
+    class Email <<Value Object>> {
+        - value: String
+        --
+        + valid?(): Boolean
+        + domain(): String
+        + to_s(): String
+    }
+    
+    class Password <<Value Object>> {
+        - digest: String
+        --
+        + {static} create(plain: String): Password
+        + matches?(plain: String): Boolean
+    }
+    
+    class VerificationToken <<Value Object>> {
+        - token: String
+        - expires_at: DateTime
+        --
+        + {static} generate(): VerificationToken
+        + expired?(): Boolean
+        + valid?(): Boolean
+    }
+    
+    class MfaCode <<Value Object>> {
+        - code: String
+        - created_at: DateTime
+        --
+        + {static} generate(): MfaCode
+        + valid?(input: String): Boolean
+        + expired?(): Boolean
+    }
+    
+    ' ========== DOMAIN SERVICES ==========
+    class AuthenticationService <<Domain Service>> {
+        + authenticate(email: String, password: String): Result<Client>
+        + verify_mfa(client: Client, code: String): Result<Boolean>
+        + generate_jwt(client: Client): String
+        + validate_jwt(token: String): Result<Client>
+    }
+    
+    class RegistrationService <<Domain Service>> {
+        + register(params: Hash): Result<Client>
+        + verify_email(token: String): Result<Client>
+        + resend_verification(email: String): Result<Boolean>
+    }
+    
+    ' ========== REPOSITORY ==========
+    interface ClientRepository <<Repository>> {
+        + find(id: UUID): Client
+        + find_by_email(email: String): Client
+        + save(client: Client): Client
+        + delete(client: Client): void
+    }
+}
+
+package "Infrastructure::Persistence" #LightGray {
+    class ClientRecord <<ActiveRecord>> {
+        + validates: presence, uniqueness
+        + has_secure_password
+    }
+    
+    class ClientRepositoryImpl <<Repository>> {
+        + find(id: UUID): Client
+        + find_by_email(email: String): Client
+        + save(client: Client): Client
+    }
+}
+
+' ========== RELATIONSHIPS ==========
+Client *-- Email : has
+Client *-- Password : has
+Client *-- VerificationToken : may have
+Client --> MfaCode : generates
+
+AuthenticationService --> Client : authenticates
+AuthenticationService --> ClientRepository : uses
+RegistrationService --> Client : creates
+RegistrationService --> ClientRepository : uses
+
+ClientRepository <|.. ClientRepositoryImpl : implements
+ClientRepositoryImpl --> ClientRecord : uses
+
+@enduml

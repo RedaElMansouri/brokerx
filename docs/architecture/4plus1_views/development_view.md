@@ -76,7 +76,7 @@ brokerx/
 
 ### Dépendances entre Modules
 
-![Diagramme entre Modules](dependances_modules.png)
+![Diagramme entre Modules](../assets/dependances_modules.png)
 
 ### Configuration des Dépendances (Gemfile)
 ```ruby

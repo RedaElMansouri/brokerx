@@ -1,0 +1,110 @@
+@startuml component_observability
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme de Composants: Stack d'Observabilité
+caption Architecture complète de monitoring et observabilité
+
+package "Applications" {
+    [BrokerX Monolith\n:3000] as monolith
+    [Clients Service\n:3001] as clients
+    [Portfolios Service\n:3002] as portfolios
+    [Orders Service\n:3003] as orders
+    [Kong Gateway\n:8000] as kong
+}
+
+package "Metrics Collection" #LightBlue {
+    [Prometheus\n:9090] as prometheus
+    
+    note right of prometheus
+        Scrape interval: 30s
+        Retention: 15 days
+        Storage: TSDB
+    end note
+    
+    file "prometheus.yml" as prom_config
+    prom_config --> prometheus
+}
+
+package "Tracing" #LightGreen {
+    [Jaeger\n:16686] as jaeger
+    
+    note right of jaeger
+        OpenTelemetry compatible
+        Trace sampling
+        Span storage
+    end note
+}
+
+package "Logging" #LightYellow {
+    [Loki\n:3100] as loki
+    [Promtail] as promtail
+    
+    note right of loki
+        Log aggregation
+        Label-based queries
+        LogQL
+    end note
+}
+
+package "Visualization" #LightCyan {
+    [Grafana\n:3000] as grafana
+    
+    folder "Dashboards" {
+        [BrokerX Metrics] as dash_metrics
+        [Request Latency] as dash_latency
+        [Error Rates] as dash_errors
+    }
+    
+    folder "Datasources" {
+        [Prometheus DS] as ds_prom
+        [Loki DS] as ds_loki
+        [Jaeger DS] as ds_jaeger
+    }
+}
+
+package "Alerting" #Pink {
+    [AlertManager] as alertmanager
+    [PagerDuty] as pagerduty
+    [Slack] as slack
+}
+
+' Metrics flow
+monolith --> prometheus : /metrics
+clients --> prometheus : /metrics
+portfolios --> prometheus : /metrics
+orders --> prometheus : /metrics
+kong --> prometheus : /metrics
+
+' Tracing flow
+monolith --> jaeger : traces
+clients --> jaeger : traces
+portfolios --> jaeger : traces
+orders --> jaeger : traces
+
+' Logging flow
+monolith --> promtail : logs
+clients --> promtail : logs
+portfolios --> promtail : logs
+orders --> promtail : logs
+promtail --> loki : push
+
+' Grafana connections
+prometheus --> ds_prom
+loki --> ds_loki
+jaeger --> ds_jaeger
+
+ds_prom --> grafana
+ds_loki --> grafana
+ds_jaeger --> grafana
+
+grafana --> dash_metrics
+grafana --> dash_latency
+grafana --> dash_errors
+
+' Alerting
+prometheus --> alertmanager : alerts
+alertmanager --> pagerduty
+alertmanager --> slack
+
+@enduml

@@ -1,0 +1,125 @@
+@startuml activity_order_placement
+!theme cerulean-outline
+skinparam backgroundColor #FEFEFE
+
+title BrokerX - Diagramme d'Activité: Placement d'Ordre
+caption UC-05: Placement d'ordre avec validation pré-trade
+
+|Client|
+start
+:Soumettre ordre
+(symbole, quantité, prix, type);
+
+|API Gateway (Kong)|
+:Valider API Key;
+:Rate Limiting check;
+if (Limite dépassée?) then (oui)
+    :429 Too Many Requests;
+    stop
+else (non)
+endif
+:Router vers Orders Service;
+
+|Orders Service|
+:Valider JWT Token;
+if (Token invalide?) then (oui)
+    :401 Unauthorized;
+    stop
+else (non)
+endif
+
+:Valider paramètres ordre;
+if (Paramètres invalides?) then (oui)
+    :400 Bad Request;
+    stop
+else (non)
+endif
+
+|TradingSaga|
+partition "Saga: Placement d'Ordre" {
+    :1. Valider ordre;
+    note right
+        - Symbole existe?
+        - Quantité > 0?
+        - Prix valide (limit)?
+    end note
+    
+    if (Validation échouée?) then (oui)
+        :Rejeter ordre;
+        :422 Unprocessable Entity;
+        stop
+    else (non)
+    endif
+    
+    :2. Vérifier client (HTTP);
+    
+    |Clients Service|
+    :Valider client_id;
+    :Vérifier statut actif;
+    
+    |TradingSaga|
+    if (Client invalide?) then (oui)
+        :Rejeter ordre;
+        stop
+    else (non)
+    endif
+    
+    :3. Réserver fonds (HTTP);
+    
+    |Portfolios Service|
+    :Calculer montant total;
+    note right
+        BUY: quantity × price + fees
+        SELL: 0 (pas de réservation)
+    end note
+    
+    :Vérifier balance disponible;
+    if (Fonds insuffisants?) then (oui)
+        :Retourner erreur;
+        
+        |TradingSaga|
+        :Rejeter ordre;
+        :422 Insufficient Funds;
+        stop
+    else (non)
+        :Créer Reservation;
+        :Déduire de available_balance;
+        :Retourner reservation_id;
+    endif
+    
+    |TradingSaga|
+    :4. Créer ordre en DB;
+    :Persister Order (status=PENDING);
+    :Créer événement Outbox;
+    
+    :5. Soumettre au MatchingEngine;
+    
+    |MatchingEngine|
+    :Recevoir ordre;
+    :Ajouter à l'OrderBook;
+    :Tenter appariement;
+    
+    if (Match trouvé?) then (oui)
+        :Créer Execution;
+        :Mettre à jour ordres;
+        :Émettre OrderExecuted;
+    else (non)
+        :Ordre reste dans book;
+        :Status = WORKING;
+    endif
+    
+    |TradingSaga|
+    :Saga complété;
+}
+
+|Orders Service|
+:Retourner réponse;
+
+|Client|
+:202 Accepted;
+:Recevoir order_id;
+:Attendre notifications WebSocket;
+
+stop
+
+@enduml
