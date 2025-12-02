@@ -1,0 +1,169 @@
+# docker-compose.yml
+# ============================================================
+# BrokerX - Architecture Monolithique
+# ============================================================
+#
+# Usage:
+#   docker compose up -d                              # Démarrer
+#   docker compose --profile lb up -d                 # Avec Load Balancer
+#   docker compose --profile observability up -d      # Avec monitoring
+#   docker compose logs -f                            # Voir les logs
+#   docker compose down -v                            # Arrêter et nettoyer
+#
+# Ports:
+#   - 80:    Nginx (profile: lb)
+#   - 3000:  Rails
+#   - 5432:  PostgreSQL
+#   - 6379:  Redis
+#   - 8025:  MailHog UI
+#   - 9090:  Prometheus (profile: observability)
+#   - 3001:  Grafana (profile: observability)
+
+services:
+  # ===========================================
+  # LOAD BALANCER (optional)
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: brokerx-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+    profiles:
+      - lb
+
+  # ===========================================
+  # DATABASE
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: brokerx-postgres
+    environment:
+      POSTGRES_DB: brokerx_development
+      POSTGRES_USER: brokerx
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brokerx -d brokerx_development"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # CACHE
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: brokerx-redis
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # EMAIL (Development)
+  # ===========================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: brokerx-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  # ===========================================
+  # APPLICATION (Rails Monolith)
+  # ===========================================
+  web:
+    build: .
+    container_name: brokerx-web
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_USERNAME: brokerx
+      DATABASE_PASSWORD: password
+      RAILS_ENV: development
+      REDIS_URL: redis://redis:6379/1
+      SMTP_ADDRESS: mailhog
+      SMTP_PORT: 1025
+      # Strangler Fig Pattern Configuration
+      # Set to 'true' to delegate to microservices instead of using local code
+      STRANGLER_FIG_ENABLED: "false"
+      CLIENTS_SERVICE_ENABLED: "false"
+      PORTFOLIOS_SERVICE_ENABLED: "false"
+      ORDERS_SERVICE_ENABLED: "false"
+      # Microservice URLs (used when Strangler Fig is enabled)
+      CLIENTS_SERVICE_URL: "http://clients-service:3001"
+      PORTFOLIOS_SERVICE_URL: "http://portfolios-service:3002"
+      ORDERS_SERVICE_URL: "http://orders-service:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - bundle_data:/usr/local/bundle
+    command: >
+      sh -c "
+        bundle config set force_ruby_platform true &&
+        bundle install &&
+        bundle exec rails db:prepare &&
+        rm -f tmp/pids/server.pid &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # OBSERVABILITY (optional)
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: brokerx-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: brokerx-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./config/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./config/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docs/observability/grafana:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - observability
+
+volumes:
+  postgres_data:
+  bundle_data:
