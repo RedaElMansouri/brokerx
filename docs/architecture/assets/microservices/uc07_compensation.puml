@@ -1,0 +1,42 @@
+@startuml UC07_Compensation_Flow
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+
+title UC-07 : Flux de Compensation (Rollback)
+
+participant "Orders\nService" as orders
+participant "Redis\nEventBus" as redis #LightBlue
+participant "Portfolios\nService" as portfolios
+
+== Flux Normal ==
+orders -> redis : order.requested
+redis -> portfolios : order.requested
+portfolios -> portfolios : Reserve $1,750
+portfolios -> redis : funds.reserved
+
+== Erreur dans Orders ==
+orders -> orders : ❌ Validation Error
+note right of orders
+  Ex: Symbol suspendu,
+  Marché fermé, etc.
+end note
+
+orders -> redis : **order.rejected**
+note right of redis #LightYellow
+  payload: {
+    order_id: "123",
+    reason: "Market closed"
+  }
+end note
+
+== Compensation ==
+redis -> portfolios : order.rejected
+portfolios -> portfolios : Release $1,750
+portfolios -> redis : **funds.released**
+
+note over portfolios #LightGreen
+  ✅ Portfolio restauré
+  Fonds disponibles à nouveau
+end note
+
+@enduml

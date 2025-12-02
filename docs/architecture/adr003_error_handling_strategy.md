@@ -10,20 +10,8 @@ Dans un système de trading, la gestion des erreurs est critique pour la fiabili
 **Implémentation d'une hiérarchie d'erreurs structurée avec gestion centralisée et enveloppe JSON normalisée** :
 
 ### Hiérarchie des erreurs :
-```
-BrokerError (base)
-├── DomainError (erreurs métier)
-│ ├── InsufficientFundsError
-│ ├── InvalidOrderError
-│ └── AccountNotActiveError
-├── ApplicationError (erreurs use case)
-│ ├── ValidationError
-│ └── AuthenticationError
-└── InfrastructureError (erreurs techniques)
-├── DatabaseError
-├── ExternalServiceError
-└── NetworkError
-```
+
+![Hiérarchie des Erreurs](assets/adr003/Error_Hierarchy.png)
 
 ### Principes :
 1. **Erreurs métier explicites** : Chaque règle métier violée a son propre type d'erreur

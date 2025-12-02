@@ -1,0 +1,12 @@
+@startuml Arc42_Building_Blocks
+!theme plain
+skinparam backgroundColor #FEFEFE
+title BrokerX+ System - Vue Niveau 1
+
+package "BrokerX+ System" {
+  [Client & Comptes Context] as clients
+  [Ordres & Trading Context] as orders
+  [Marché & Données Context] as market
+}
+
+@enduml

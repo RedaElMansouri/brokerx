@@ -1,0 +1,68 @@
+@startuml Microservices_Architecture
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title BrokerX Microservices Architecture
+
+cloud "Client Applications" as clients {
+  [Web]
+  [Mobile]
+  [API]
+}
+
+rectangle "API Gateway" as gateway #LightBlue {
+  component "Kong Gateway\n(8080)" as kong
+  note right of kong
+    • Rate Limiting
+    • Authentication
+    • Routing
+    • Metrics
+  end note
+}
+
+rectangle "Microservices" as services {
+  rectangle "Clients Service\n(3001)" as clients_svc #LightGreen {
+    component "Registration"
+    component "Authentication"
+    component "MFA"
+    component "Email Verify"
+  }
+  
+  rectangle "Portfolios Service\n(3002)" as portfolios_svc #LightYellow {
+    component "Deposits"
+    component "Withdrawals"
+    component "Balance"
+    component "Transactions"
+  }
+  
+  rectangle "Orders Service\n(3003)" as orders_svc #LightCoral {
+    component "Create Order"
+    component "Cancel Order"
+    component "Replace Order"
+    component "Market Data"
+  }
+}
+
+database "Databases" as dbs {
+  database "PostgreSQL\nclients (5433)" as db_clients
+  database "PostgreSQL\nportfolios (5434)" as db_portfolios
+  database "PostgreSQL\norders (5435)" as db_orders
+}
+
+queue "Redis\n(6379)" as redis #Pink
+
+clients --> kong
+kong --> clients_svc
+kong --> portfolios_svc
+kong --> orders_svc
+
+clients_svc --> db_clients
+portfolios_svc --> db_portfolios
+orders_svc --> db_orders
+
+clients_svc --> redis
+portfolios_svc --> redis
+orders_svc --> redis
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml UC07_Compensation_Path
+!theme plain
+skinparam backgroundColor #FEFEFE
+title UC-07 Compensation Path - Fonds insuffisants
+
+actor Client
+participant "Orders Service" as orders
+participant "Redis EventBus" as redis
+participant "Portfolios Service" as portfolios
+
+Client -> orders : POST /orders
+activate orders
+
+orders -> redis : order.requested
+redis -> portfolios : order.requested
+activate portfolios
+portfolios -> portfolios : reserve_funds()\n**FAILED!**
+portfolios -> redis : funds.reservation_failed
+deactivate portfolios
+
+redis -> orders : funds.reservation_failed
+orders -> orders : reject_order()\nstatus='rejected'
+
+orders --> Client : 422 Rejected
+deactivate orders
+
+@enduml

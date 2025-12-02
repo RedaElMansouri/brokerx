@@ -1,0 +1,57 @@
+@startuml Error_Hierarchy
+!theme plain
+skinparam backgroundColor #FEFEFE
+title Hiérarchie des Erreurs BrokerX
+
+class BrokerError <<base>> {
+}
+
+class DomainError <<métier>> {
+}
+
+class ApplicationError <<use case>> {
+}
+
+class InfrastructureError <<technique>> {
+}
+
+class InsufficientFundsError {
+}
+
+class InvalidOrderError {
+}
+
+class AccountNotActiveError {
+}
+
+class ValidationError {
+}
+
+class AuthenticationError {
+}
+
+class DatabaseError {
+}
+
+class ExternalServiceError {
+}
+
+class NetworkError {
+}
+
+BrokerError <|-- DomainError
+BrokerError <|-- ApplicationError
+BrokerError <|-- InfrastructureError
+
+DomainError <|-- InsufficientFundsError
+DomainError <|-- InvalidOrderError
+DomainError <|-- AccountNotActiveError
+
+ApplicationError <|-- ValidationError
+ApplicationError <|-- AuthenticationError
+
+InfrastructureError <|-- DatabaseError
+InfrastructureError <|-- ExternalServiceError
+InfrastructureError <|-- NetworkError
+
+@enduml

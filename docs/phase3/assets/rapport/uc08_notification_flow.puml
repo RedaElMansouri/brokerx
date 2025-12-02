@@ -1,0 +1,27 @@
+@startuml UC08_Notification_Flow
+
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title UC-08: Flux de Notification avec Load Balancing
+
+actor "Client WS\n(notifs)" as Client
+participant "Nginx\nLB" as LB
+participant "web-1/2/3\nActionCable" as Web
+database "Redis Pub/Sub\n(sessions partagées)" as Redis
+
+Client -> LB : WebSocket /cable
+LB -> Web : Route vers instance
+
+Web <--> Redis : Sessions partagées
+
+note over Web, Redis
+  Redis assure la synchronisation
+  des connexions WebSocket
+  entre les 3 instances
+end note
+
+Web --> LB : Notification
+LB --> Client : execution.report
+
+@enduml

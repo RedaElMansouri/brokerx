@@ -1,0 +1,29 @@
+@startuml Dependency_Flow
+
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title Flux de Dépendances - Architecture Hexagonale
+
+package "Infrastructure" {
+  component "Frameworks\nRails" as Infra
+}
+
+package "Application" {
+  component "Use Cases\nAPI Services" as App
+}
+
+package "Domain" {
+  component "Business Rules\nEntities/VOs" as Dom
+}
+
+Infra --> App : depends on
+App --> Dom : depends on
+
+note bottom of Dom
+  Aucune dependance inverse permise
+  Le domaine ne connait pas l application
+  qui ne connait pas l infrastructure
+end note
+
+@enduml

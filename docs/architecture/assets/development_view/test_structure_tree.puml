@@ -1,0 +1,41 @@
+@startuml Test_Structure_Tree
+
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Monospaced
+
+title Structure des Tests - BrokerX
+
+salt
+{
+  {T
+    + **spec/**
+    ++ <color:royalblue>domain/</color> | Tests unitaires du domaine
+    +++ clients/
+    ++++ client_spec.rb
+    ++++ portfolio_spec.rb
+    ++++ value_objects/
+    +++++ email_spec.rb
+    +++ trading/
+    ++ <color:green>application/</color> | Tests des use cases
+    +++ use_cases/
+    ++++ register_client_use_case_spec.rb
+    ++++ place_order_use_case_spec.rb
+    +++ services/
+    ++ <color:darkorange>infrastructure/</color> | Tests d'intégration
+    +++ persistence/
+    +++ web/
+    ++ <color:purple>features/</color> | Tests E2E
+    +++ client_registration_spec.rb
+    +++ order_placement_spec.rb
+  }
+}
+
+legend right
+  | Couleur | Type de Test |
+  | <color:royalblue>Bleu</color> | Unitaires Domain |
+  | <color:green>Vert</color> | Use Cases |
+  | <color:darkorange>Orange</color> | Intégration |
+  | <color:purple>Violet</color> | E2E |
+endlegend
+
+@enduml

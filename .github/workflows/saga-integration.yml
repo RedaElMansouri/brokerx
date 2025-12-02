@@ -1,0 +1,120 @@
+# CI/CD Workflow for Choreographed Saga Integration Tests
+# Runs integration tests for UC-07 (Order Matching with Event-Driven Architecture)
+
+name: Saga Integration Tests
+
+on:
+  push:
+    branches: [main, feature/microservices-extraction]
+    paths:
+      - 'services/**'
+      - 'test/integration/**'
+      - '.github/workflows/saga-integration.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'test/integration/**'
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres-clients:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: clients_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres-portfolios:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: portfolios_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres-orders:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: orders_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Build and start microservices
+        run: |
+          docker compose -f docker-compose.microservices.yml build
+          docker compose -f docker-compose.microservices.yml up -d
+          sleep 30  # Wait for services to be ready
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services..."
+          timeout 120 bash -c 'until curl -sf http://localhost:3001/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:3002/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:3003/health; do sleep 5; done'
+          echo "All services healthy!"
+
+      - name: Run Choreographed Saga Integration Tests
+        env:
+          REDIS_URL: redis://localhost:6379/15
+          ORDERS_SERVICE_URL: http://localhost:3003
+          PORTFOLIOS_SERVICE_URL: http://localhost:3002
+        run: |
+          ruby test/integration/choreographed_saga_integration_test.rb
+
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          echo "=== Clients Service Logs ==="
+          docker logs brokerx-clients-service --tail 100
+          echo "=== Portfolios Service Logs ==="
+          docker logs brokerx-portfolios-service --tail 100
+          echo "=== Orders Service Logs ==="
+          docker logs brokerx-orders-service --tail 100
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f docker-compose.microservices.yml down -v

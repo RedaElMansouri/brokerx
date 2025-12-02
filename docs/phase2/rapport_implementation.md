@@ -90,27 +90,11 @@ Le **Saga Pattern** implémenté dans `TradingSaga` orchestre le flux complet de
 
 **Pattern Outbox**: Les événements `order.created` sont persistés dans la même transaction que l'ordre, garantissant l'atomicité. Le dispatcher lit périodiquement les événements `pending` et les injecte dans le moteur d'appariement.
 
-```
-UC-07 Flow avec TradingSaga + Outbox:
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│ POST /order │───▶│ TradingSaga  │───▶│ MatchingEngine  │
-└─────────────┘    │  validate    │    │ (UC-07 cœur)    │
-                   │  reserve     │    └─────────────────┘
-                   │  create      │           │
-                   │  submit      │◀──────────┘
-                   └──────────────┘
-                         │
-                   Si échec: compensate!
-                         │
-                   ┌─────▼─────┐
-                   │ release   │
-                   │ funds     │
-                   └───────────┘
-```
+![UC-07 Flow avec TradingSaga + Outbox](assets/rapport_implementation/UC07_Flow_Diagram.png)
 
 **Diagramme de séquence TradingSaga**:
 
-![TradingSaga Sequence](assets/trading_saga_sequence.png)
+![TradingSaga Sequence](assets/rapport_implementation/trading_saga_sequence.png)
 
 **Événements émis**:
 | Type | Source | Description |
@@ -133,20 +117,11 @@ Le **cache Redis** et le **load balancing** garantissent des notifications fiabl
 3. Email de confirmation programmé (fallback robustesse)
 4. Événement marqué `processed`
 
-```
-UC-08 avec Load Balancing:
-┌────────────┐     ┌─────────┐     ┌────────────┐
-│ Client WS  │────▶│  Nginx  │────▶│ web-1/2/3  │
-│ (notifs)   │     │   LB    │     │ ActionCable│
-└────────────┘     └─────────┘     └────────────┘
-                                         │
-                   Redis Pub/Sub ◀───────┘
-                   (sessions partagées)
-```
+![UC-08 avec Load Balancing](assets/rapport_implementation/UC08_LoadBalancing_Flow.png)
 
 **Diagramme du flux Outbox (UC-07/UC-08)**:
 
-![Outbox Event Flow](assets/outbox_event_flow.png)
+![Outbox Event Flow](assets/rapport_implementation/outbox_event_flow.png)
 
 ---
 
@@ -509,35 +484,11 @@ Ces fondations permettent d'envisager sereinement l'évolution vers une architec
 
 ### A. Arborescence des fichiers créés/modifiés
 
-```
-brokerx/
-├── docker-compose.lb.yml          # CRÉÉ - Orchestration LB
-├── nginx/
-│   └── nginx.conf                  # CRÉÉ - Config Nginx
-├── app/
-│   ├── application/services/
-│   │   ├── trading_saga.rb         # CRÉÉ - Saga orchestrator
-│   │   └── outbox_dispatcher.rb    # MODIFIÉ - Support saga.*
-│   └── middleware/
-│       └── instance_header_middleware.rb  # MODIFIÉ - INSTANCE_ID
-├── test/unit/
-│   └── trading_saga_test.rb        # CRÉÉ - 6 tests
-├── load/k6/
-│   ├── load.js                     # CRÉÉ - Test charge
-│   ├── stress.js                   # CRÉÉ - Test stress
-│   ├── lb_test.js                  # CRÉÉ - Test LB
-│   └── README.md                   # CRÉÉ - Documentation
-└── docs/
-    └── architecture/
-        ├── adr008_redis_cache.md   # CRÉÉ
-        ├── adr009_load_balancing.md # CRÉÉ
-        ├── adr010_saga_pattern.md  # CRÉÉ
-        └── arc42/arc42.md          # MODIFIÉ - Sections 9, 10, 11
-```
+![Arborescence Phase 2](assets/rapport_implementation/Phase2_Project_Tree.png)
 
 ### B. Diagrammes PlantUML
 
-Les diagrammes suivants ont été créés dans `docs/phase2/assets/`:
+Les diagrammes suivants ont été créés dans `docs/phase2/assets/rapport_implementation/`:
 
 | Fichier | Description |
 |---------|-------------|

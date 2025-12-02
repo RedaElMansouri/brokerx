@@ -1,0 +1,48 @@
+@startuml Saga_Comparison
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+
+title Comparaison : Saga Orchestrée vs Chorégraphiée
+
+rectangle "**Saga Orchestrée**" as orchestrated {
+  component "Orchestrator" as orch #Orange
+  component "Service A" as sa1
+  component "Service B" as sb1
+  component "Service C" as sc1
+  
+  orch --> sa1 : 1. call
+  sa1 --> orch : response
+  orch --> sb1 : 2. call
+  sb1 --> orch : response
+  orch --> sc1 : 3. call
+  sc1 --> orch : response
+}
+
+rectangle "**Saga Chorégraphiée**" as choreographed {
+  component "Service A" as sa2
+  component "Service B" as sb2
+  component "Service C" as sc2
+  queue "Event Bus" as bus #LightBlue
+  
+  sa2 --> bus : event A
+  bus --> sb2 : listen
+  sb2 --> bus : event B
+  bus --> sc2 : listen
+  sc2 --> bus : event C
+}
+
+note bottom of orchestrated
+  ❌ Point de défaillance unique
+  ❌ Couplage fort
+  ✅ Facile à comprendre
+  ✅ Flux centralisé
+end note
+
+note bottom of choreographed
+  ✅ Pas de SPOF
+  ✅ Services découplés
+  ✅ Très scalable
+  ❌ Plus complexe à tracer
+end note
+
+@enduml

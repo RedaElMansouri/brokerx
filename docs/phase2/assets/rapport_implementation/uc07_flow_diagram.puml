@@ -1,0 +1,28 @@
+@startuml UC07_Flow_Diagram
+!theme plain
+skinparam backgroundColor #FEFEFE
+title UC-07 Flow avec TradingSaga + Outbox
+
+rectangle "POST /order" as client
+rectangle "TradingSaga" as saga {
+  card "validate" as v
+  card "reserve" as r
+  card "create" as c
+  card "submit" as s
+}
+rectangle "MatchingEngine\n(UC-07 cœur)" as engine
+
+rectangle "Compensation\n(si échec)" as comp {
+  card "release\nfunds" as release
+}
+
+client --> saga
+v --> r
+r --> c
+c --> s
+s --> engine
+engine --> saga : résultat
+
+saga ..> comp : "Si échec: compensate!"
+
+@enduml

@@ -12,7 +12,7 @@ class Order < ApplicationRecord
   validates :quantity, presence: true, numericality: { greater_than: 0, only_integer: true }
   validates :price, numericality: { greater_than: 0 }, if: :limit_order?
   validates :time_in_force, presence: true, inclusion: { in: %w[DAY GTC IOC FOK] }
-  validates :status, presence: true, inclusion: { in: %w[new working filled partially_filled cancelled rejected] }
+  validates :status, presence: true, inclusion: { in: %w[new pending_funds working filled partially_filled cancelled rejected] }
 
   # Scopes
   scope :active, -> { where(status: %w[new working partially_filled]) }

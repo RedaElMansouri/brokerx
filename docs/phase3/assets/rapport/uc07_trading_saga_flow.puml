@@ -1,0 +1,43 @@
+@startuml UC07_TradingSaga_Flow
+
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title UC-07: Flux TradingSaga + Outbox
+
+actor Client
+participant "POST /order" as API
+participant "TradingSaga" as Saga
+participant "MatchingEngine\n(UC-07 cœur)" as ME
+
+Client -> API : Soumettre ordre
+API -> Saga : execute()
+activate Saga
+
+Saga -> Saga : validate()
+note right : Vérifier fonds, limites, symbole
+
+Saga -> Saga : reserve()
+note right : Réserver le montant (achat)
+
+Saga -> Saga : create()
+note right : Persister dans DB + événement Outbox
+
+Saga -> ME : submit()
+activate ME
+
+ME --> Saga : ACK ou match
+deactivate ME
+
+alt Échec à une étape
+    Saga -> Saga : compensate!
+    note right #FFB6C1 : release_funds()
+end
+
+Saga --> API : SagaResult
+deactivate Saga
+
+API --> Client : JSON Response
+
+@enduml

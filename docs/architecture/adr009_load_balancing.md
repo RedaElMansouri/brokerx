@@ -11,27 +11,7 @@ Pour assurer la haute disponibilité et la scalabilité horizontale de BrokerX, 
 
 ### Architecture implémentée :
 
-```
-                    ┌─────────────┐
-                    │   Client    │
-                    └──────┬──────┘
-                           │ :80
-                    ┌──────▼──────┐
-                    │    Nginx    │
-                    │ (LB + proxy)│
-                    └──────┬──────┘
-           ┌───────────────┼───────────────┐
-           │               │               │
-    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-    │   web-1    │ │   web-2    │ │   web-3    │
-    │  (Rails)   │ │  (Rails)   │ │  (Rails)   │
-    └─────────────┘ └─────────────┘ └─────────────┘
-           │               │               │
-           └───────────────┼───────────────┘
-                    ┌──────▼──────┐
-                    │   Redis     │◄── Cache partagé
-                    └─────────────┘
-```
+![Architecture Load Balancing](assets/adr009/LoadBalancing_Architecture.png)
 
 ### Configuration Nginx :
 

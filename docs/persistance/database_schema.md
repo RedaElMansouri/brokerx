@@ -4,7 +4,7 @@
 Schéma PostgreSQL conçu pour supporter les 3 bounded contexts avec intégrité référentielle, contraintes métier et préparation pour l'évolutivité.
 
 ## Diagramme Entité-Relation
-![Diagramme Entité-Relation](assets/diagramme_entity-relation.png)
+![Diagramme Entité-Relation](assets/database_schema/diagramme_entity-relation.png)
 
 
 ## Contraintes d'Intégrité Métier
@@ -55,21 +55,8 @@ CREATE UNIQUE INDEX idx_orders_client_order_id ON orders(client_order_id) WHERE 
 
 ## Stratégie de Migration
 ### Structure des Migrations Rails
-```
-db/
-├── migrate/
-│   ├── 001_create_clients.rb
-│   ├── 002_create_accounts.rb
-│   ├── 003_create_portfolios.rb
-│   ├── 004_create_instruments.rb
-│   ├── 005_create_orders.rb
-│   ├── 006_create_trades.rb
-│   ├── 007_create_market_data.rb
-│   ├── 008_create_audit_logs.rb
-│   └── 009_add_constraints_and_indexes.rb
-├── seeds.rb
-└── schema.rb
-```
+
+![Structure des Migrations](assets/database_schema/Database_Migration_Structure.png)
 
 ## Données de Référence (Seeds)
 ### Instruments Financiers de Base

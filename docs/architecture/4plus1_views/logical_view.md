@@ -8,13 +8,13 @@ Décrire l'organisation statique du système en termes de classes, packages et r
 ### Packages du Domaine (Bounded Contexts)
 
 #### Package: `domain.clients`
-  ![domain.clients](../assets/domain_clients.png)
+  ![domain.clients](../assets/logical_view/domain_clients.png)
 #### Package: `domain.trading`
-  ![domain.trading](../assets/domain.trading.png)
+  ![domain.trading](../assets/logical_view/domain.trading.png)
 #### Package: `domain.market_data`
-  ![domain.market_data](../assets/domain_market_data.png)
+  ![domain.market_data](../assets/logical_view/domain_market_data.png)
 #### Relations entre Packages
-  ![Relations_Packages](../assets/relation_packages.png)
+  ![Relations_Packages](../assets/logical_view/relation_packages.png)
 
 ### Principes de Conception
 - **Encapsulation forte** : Les entités protègent leur invariant

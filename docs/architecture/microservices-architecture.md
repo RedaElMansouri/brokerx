@@ -6,37 +6,7 @@ BrokerX utilise une architecture microservices avec un pattern **Strangler Fig**
 
 ## Architecture
 
-```
-                    ┌─────────────────────────────┐
-                    │    Client Applications      │
-                    │   (Web, Mobile, API)        │
-                    └─────────────┬───────────────┘
-                                  │
-                    ┌─────────────▼───────────────┐
-                    │     Kong Gateway (8080)     │
-                    │    (Rate Limiting, Auth,    │
-                    │     Routing, Metrics)       │
-                    └─────────────┬───────────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Clients Service │    │Portfolios Service│   │ Orders Service  │
-│    (3001)       │    │    (3002)       │    │    (3003)       │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ • Registration  │    │ • Deposits      │    │ • Create Order  │
-│ • Authentication│    │ • Withdrawals   │    │ • Cancel Order  │
-│ • MFA           │    │ • Balance       │    │ • Replace Order │
-│ • Email Verify  │    │ • Transactions  │    │ • Market Data   │
-└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
-         │                      │                      │
-         ▼                      ▼                      ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ PostgreSQL      │    │ PostgreSQL      │    │ PostgreSQL      │
-│ clients (5433)  │    │ portfolios(5434)│    │ orders (5435)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+![Architecture Microservices](diagrams/Microservices_Architecture.png)
 
 ## Services
 

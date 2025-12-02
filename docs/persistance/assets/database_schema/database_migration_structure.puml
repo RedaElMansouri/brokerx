@@ -1,0 +1,21 @@
+@startuml Database_Migration_Structure
+!theme plain
+salt
+{
+    {T
+    + db/
+    ++ migrate/
+    +++ 001_create_clients.rb
+    +++ 002_create_accounts.rb
+    +++ 003_create_portfolios.rb
+    +++ 004_create_instruments.rb
+    +++ 005_create_orders.rb
+    +++ 006_create_trades.rb
+    +++ 007_create_market_data.rb
+    +++ 008_create_audit_logs.rb
+    +++ 009_add_constraints_and_indexes.rb
+    ++ seeds.rb
+    ++ schema.rb
+    }
+}
+@enduml

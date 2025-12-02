@@ -1,0 +1,43 @@
+@startuml UC07_Choreographed_Saga_Architecture
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title UC-07 : Architecture Saga Chorégraphiée
+
+rectangle "Orders Service" as orders {
+  component "OrdersController" as oc
+  component "ChoreographedSaga" as saga
+  component "EventHandler" as oh
+  component "MatchingEngine" as me
+}
+
+rectangle "Portfolios Service" as portfolios {
+  component "EventHandler" as ph
+  component "FundReservation" as fr
+  component "PositionManager" as pm
+}
+
+queue "Redis EventBus" as redis #LightBlue
+
+oc --> saga : 1. POST /orders
+saga --> redis : 2. order.requested
+redis --> ph : 3. order.requested
+ph --> fr : 4. Reserve funds
+fr --> redis : 5. funds.reserved
+redis --> oh : 6. funds.reserved
+oh --> me : 7. Submit order
+me --> redis : 8. execution.report
+redis --> pm : 9. execution.report
+pm --> redis : 10. position.updated
+
+note right of redis
+  **Événements UC-07:**
+  • order.requested
+  • funds.reserved
+  • funds.reservation_failed
+  • execution.report
+  • position.updated
+end note
+
+@enduml

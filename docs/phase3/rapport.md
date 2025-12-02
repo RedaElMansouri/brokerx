@@ -92,27 +92,13 @@ Le **Saga Pattern** implémenté dans `TradingSaga` orchestre le flux complet de
 
 **Pattern Outbox**: Les événements `order.created` sont persistés dans la même transaction que l'ordre, garantissant l'atomicité. Le dispatcher lit périodiquement les événements `pending` et les injecte dans le moteur d'appariement.
 
-```
-UC-07 Flow avec TradingSaga + Outbox:
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│ POST /order │───▶│ TradingSaga  │───▶│ MatchingEngine  │
-└─────────────┘    │  validate    │    │ (UC-07 cœur)    │
-                   │  reserve     │    └─────────────────┘
-                   │  create      │           │
-                   │  submit      │◀──────────┘
-                   └──────────────┘
-                         │
-                   Si échec: compensate!
-                         │
-                   ┌─────▼─────┐
-                   │ release   │
-                   │ funds     │
-                   └───────────┘
-```
+**Diagramme de flux TradingSaga (UC-07)**:
+
+![UC-07 TradingSaga Flow](assets/rapport/UC07_TradingSaga_Flow.png)
 
 **Diagramme de séquence TradingSaga**:
 
-![TradingSaga Sequence](assets/trading_saga_sequence.png)
+![TradingSaga Sequence](assets/rapport/trading_saga_sequence.png)
 
 **Événements émis**:
 | Type | Source | Description |
@@ -129,22 +115,9 @@ Le **cache Redis** et le **load balancing** garantissent des notifications fiabl
 - **Redis Pub/Sub** pour diffusion inter-instances
 - **Scalabilité** pour gérer les pics de notifications
 
-**Flux de notification**:
-1. MatchingEngine écrit `execution.report` (pending) dans Outbox
-2. Dispatcher traite → broadcast temps réel (canal `orders_status:<order_id>`)
-3. Email de confirmation programmé (fallback robustesse)
-4. Événement marqué `processed`
+**Flux de notification (UC-08)**:
 
-```
-UC-08 avec Load Balancing:
-┌────────────┐     ┌─────────┐     ┌────────────┐
-│ Client WS  │────▶│  Nginx  │────▶│ web-1/2/3  │
-│ (notifs)   │     │   LB    │     │ ActionCable│
-└────────────┘     └─────────┘     └────────────┘
-                                         │
-                   Redis Pub/Sub ◀───────┘
-                   (sessions partagées)
-```
+![UC-08 Notification Flow](assets/rapport/UC08_Notification_Flow.png)
 
 **Diagramme du flux Outbox (UC-07/UC-08)**:
 
@@ -590,45 +563,11 @@ Ces fondations permettent d'envisager sereinement l'évolution vers une architec
 
 ### A. Arborescence des fichiers créés/modifiés
 
-```
-brokerx/
-├── docker-compose.lb.yml          # CRÉÉ - Orchestration LB
-├── nginx/
-│   └── nginx.conf                  # CRÉÉ - Config Nginx
-├── app/
-│   ├── application/services/
-│   │   ├── trading_saga.rb         # CRÉÉ - Saga orchestrator
-│   │   └── outbox_dispatcher.rb    # MODIFIÉ - Support saga.*
-│   └── middleware/
-│       └── instance_header_middleware.rb  # MODIFIÉ - INSTANCE_ID
-├── config/observability/grafana/
-│   └── provisioning/               # CRÉÉ - Auto-config Grafana
-│       ├── datasources/
-│       │   └── datasources.yml
-│       └── dashboards/
-│           └── dashboards.yml
-├── test/unit/
-│   └── trading_saga_test.rb        # CRÉÉ - 6 tests
-├── load/k6/
-│   ├── load.js                     # CRÉÉ - Test charge
-│   ├── stress.js                   # CRÉÉ - Test stress
-│   ├── lb_test.js                  # CRÉÉ - Test LB
-│   └── README.md                   # CRÉÉ - Documentation
-└── docs/
-    ├── architecture/
-    │   ├── adr008_redis_cache.md   # CRÉÉ
-    │   ├── adr009_load_balancing.md # CRÉÉ
-    │   ├── adr010_saga_pattern.md  # CRÉÉ
-    │   └── arc42/arc42.md          # MODIFIÉ - Sections 9, 10, 11
-    └── phase3/
-        ├── rapport.md              # CE RAPPORT
-        ├── assets/                   # Diagrammes PlantUML
-        └── assets/            # Captures Grafana/Prometheus
-```
+![Arborescence Phase 3](assets/rapport/Project_Tree_Phase3.png)
 
 ### B. Diagrammes PlantUML
 
-Les diagrammes suivants sont disponibles dans `docs/phase3/assets/`:
+Les diagrammes suivants sont disponibles dans `docs/phase3/assets/rapport/`:
 
 | Fichier | Description |
 |---------|-------------|

@@ -1,0 +1,62 @@
+@startuml Hexagonal_Architecture_Tree
+
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Monospaced
+
+title Structure Architecture Hexagonale - BrokerX
+
+salt
+{
+  {T
+    + **brokerx/**
+    ++ app/
+    +++ <color:royalblue>domain/</color> | Couche Domaine (Pure Ruby)
+    ++++ clients/ | BC Client & Comptes
+    +++++ entities/
+    ++++++ client.rb
+    ++++++ account.rb
+    ++++++ portfolio.rb
+    +++++ value_objects/
+    ++++++ email.rb
+    ++++++ money.rb
+    ++++++ account_status.rb
+    +++++ services/
+    ++++++ portfolio_management_service.rb
+    +++++ repositories/ | Interfaces seulement
+    ++++++ client_repository.rb
+    ++++++ portfolio_repository.rb
+    ++++ trading/ | BC Ordres & Trading
+    ++++ market_data/ | BC Marché & Données
+    +++ <color:green>application/</color> | Couche Application
+    ++++ use_cases/
+    +++++ register_client_use_case.rb
+    +++++ authenticate_user_use_case.rb
+    +++++ place_order_use_case.rb
+    ++++ dtos/ | Data Transfer Objects
+    +++++ client_registration_dto.rb
+    +++++ place_order_dto.rb
+    ++++ services/
+    +++++ order_validation_service.rb
+    +++ <color:darkorange>infrastructure/</color> | Couche Infrastructure
+    ++++ web/ | Adaptateurs Web
+    +++++ controllers/
+    +++++ serializers/
+    +++++ middleware/
+    ++++ persistence/ | Adaptateurs Persistance
+    +++++ active_record/
+    +++++ repositories/
+    ++++ external/ | Adaptateurs Externes
+    ++ config/ | Configuration
+    ++ db/ | Migrations
+    ++ spec/ | Tests
+  }
+}
+
+legend right
+  | Couleur | Couche |
+  | <color:royalblue>Bleu</color> | Domain |
+  | <color:green>Vert</color> | Application |
+  | <color:darkorange>Orange</color> | Infrastructure |
+endlegend
+
+@enduml

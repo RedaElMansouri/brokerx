@@ -1,0 +1,31 @@
+@startuml Phase2_Project_Tree
+!theme plain
+salt
+{
+    {T
+    + brokerx/
+    ++ docker-compose.lb.yml | <color:green>CRÉÉ - Orchestration LB</color>
+    ++ nginx/
+    +++ nginx.conf | <color:green>CRÉÉ - Config Nginx</color>
+    ++ app/
+    +++ application/services/
+    ++++ trading_saga.rb | <color:green>CRÉÉ - Saga orchestrator</color>
+    ++++ outbox_dispatcher.rb | <color:orange>MODIFIÉ - Support saga.*</color>
+    +++ middleware/
+    ++++ instance_header_middleware.rb | <color:orange>MODIFIÉ - INSTANCE_ID</color>
+    ++ test/unit/
+    +++ trading_saga_test.rb | <color:green>CRÉÉ - 6 tests</color>
+    ++ load/k6/
+    +++ load.js | <color:green>CRÉÉ - Test charge</color>
+    +++ stress.js | <color:green>CRÉÉ - Test stress</color>
+    +++ lb_test.js | <color:green>CRÉÉ - Test LB</color>
+    +++ README.md | <color:green>CRÉÉ - Documentation</color>
+    ++ docs/
+    +++ architecture/
+    ++++ adr008_redis_cache.md | <color:green>CRÉÉ</color>
+    ++++ adr009_load_balancing.md | <color:green>CRÉÉ</color>
+    ++++ adr010_saga_pattern.md | <color:green>CRÉÉ</color>
+    ++++ arc42/arc42.md | <color:orange>MODIFIÉ - Sections 9, 10, 11</color>
+    }
+}
+@enduml

@@ -1,0 +1,30 @@
+@startuml UC07_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+title Architecture Choreographed Saga - UC-07
+
+rectangle "Orders Service" as orders {
+  [EventBus] as eb1
+  [Order Handler] as oh
+  [Matching Engine] as me
+  
+  eb1 --> oh
+  oh --> me
+  me --> eb1
+}
+
+rectangle "Portfolios Service" as portfolios {
+  [EventBus] as eb2
+  [Portfolio Handler] as ph
+  [Position Manager] as pm
+  
+  eb2 --> ph
+  ph --> pm
+}
+
+database "Redis Pub/Sub\n(DB 15)" as redis
+
+eb1 <--> redis : order.requested\nexecution.report
+redis <--> eb2 : funds.reserved\nfunds.reservation_failed
+
+@enduml

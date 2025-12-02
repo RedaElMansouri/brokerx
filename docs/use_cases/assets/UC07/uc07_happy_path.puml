@@ -1,0 +1,32 @@
+@startuml UC07_Happy_Path
+!theme plain
+skinparam backgroundColor #FEFEFE
+title UC-07 Happy Path - Ordre exécuté avec succès
+
+actor Client
+participant "Orders Service" as orders
+participant "Redis EventBus" as redis
+participant "Portfolios Service" as portfolios
+
+Client -> orders : POST /orders
+activate orders
+
+orders -> redis : order.requested
+redis -> portfolios : order.requested
+activate portfolios
+portfolios -> portfolios : reserve_funds()
+portfolios -> redis : funds.reserved
+deactivate portfolios
+
+redis -> orders : funds.reserved
+orders -> orders : submit_to_matching()
+orders -> redis : execution.report
+redis -> portfolios : execution.report
+activate portfolios
+portfolios -> portfolios : update_position()
+deactivate portfolios
+
+orders --> Client : 200 OK
+deactivate orders
+
+@enduml

@@ -1,0 +1,32 @@
+@startuml UC07_Files_Structure
+!theme plain
+salt
+{
+    {T
+    + services/
+    ++ orders-service/
+    +++ lib/
+    ++++ event_bus.rb | Module EventBus (Redis Pub/Sub)
+    +++ app/sagas/
+    ++++ choreographed_trading_saga.rb
+    +++ app/event_handlers/
+    ++++ funds_handlers.rb | Handlers: funds.reserved, etc.
+    +++ app/services/
+    ++++ event_subscriber.rb | Subscriber background thread
+    +++ app/models/
+    ++++ order.rb
+    ++++ outbox_event.rb
+    ++ portfolios-service/
+    +++ lib/
+    ++++ event_bus.rb | Module EventBus (Redis Pub/Sub)
+    +++ app/event_handlers/
+    ++++ order_handlers.rb | Handlers: order.requested, etc.
+    +++ app/services/
+    ++++ event_subscriber.rb | Subscriber background thread
+    +++ app/models/
+    ++++ portfolio.rb
+    ++++ fund_reservation.rb
+    ++++ position.rb
+    }
+}
+@enduml

@@ -1,0 +1,15 @@
+@startuml UC08_LoadBalancing_Flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+title UC-08 avec Load Balancing
+
+actor "Client WS\n(notifs)" as client
+rectangle "Nginx\nLB" as nginx
+rectangle "web-1/2/3\nActionCable" as web
+database "Redis Pub/Sub\n(sessions partagées)" as redis
+
+client --> nginx
+nginx --> web
+web --> redis : broadcast
+
+@enduml

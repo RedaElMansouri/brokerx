@@ -1,0 +1,56 @@
+@startuml UC07_Order_Placement_Sequence
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title UC-07 : Flux de placement d'un ordre d'achat
+
+participant "Client" as client
+participant "Orders\nService" as orders
+participant "Redis\nEventBus" as redis #LightBlue
+participant "Portfolios\nService" as portfolios
+participant "Matching\nEngine" as matching
+
+client -> orders : POST /orders
+activate orders
+
+orders -> orders : Create Order\n(status: pending_funds)
+orders -> redis : **order.requested**
+activate redis
+
+orders --> client : 202 Accepted
+deactivate orders
+
+redis -> portfolios : order.requested
+activate portfolios
+
+portfolios -> portfolios : Reserve funds
+portfolios -> redis : **funds.reserved**
+deactivate portfolios
+
+redis -> orders : funds.reserved
+deactivate redis
+activate orders
+
+orders -> orders : Update status: new
+orders -> matching : Submit order
+activate matching
+deactivate orders
+
+matching -> matching : Add to OrderBook
+matching -> matching : Match found!
+matching -> matching : Create Trade
+
+matching -> redis : **execution.report**
+activate redis
+deactivate matching
+
+redis -> portfolios : execution.report
+activate portfolios
+portfolios -> portfolios : Update Position
+portfolios -> portfolios : Release excess $
+portfolios -> redis : **position.updated**
+deactivate portfolios
+deactivate redis
+
+@enduml

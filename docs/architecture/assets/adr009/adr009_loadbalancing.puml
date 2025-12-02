@@ -1,0 +1,26 @@
+@startuml LoadBalancing_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+title Architecture Load Balancing BrokerX
+
+actor "Client" as client
+
+rectangle "Nginx\n(LB + proxy)" as nginx
+
+rectangle "Rails Instances" as rails {
+  rectangle "web-1\n(Rails)" as web1
+  rectangle "web-2\n(Rails)" as web2
+  rectangle "web-3\n(Rails)" as web3
+}
+
+database "Redis\nCache partagé" as redis
+
+client --> nginx : ":80"
+nginx --> web1
+nginx --> web2
+nginx --> web3
+web1 --> redis
+web2 --> redis
+web3 --> redis
+
+@enduml

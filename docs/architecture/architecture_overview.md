@@ -10,30 +10,12 @@ Architecture monolithique hexagonale organisée par bounded contexts, préparant
 4. **Evolutionary Architecture** : Préparation pour la migration microservices
 
 ## Structure des couches
-```
-brokerx/
-├── app/
-│ ├── domain/ # Couche Domaine (Entities, Value Objects, Domain Services)
-│ │ ├── clients/ # Bounded Context: Client & Comptes
-│ │ ├── trading/ # Bounded Context: Ordres & Trading
-│ │ └── market_data/ # Bounded Context: Marché & Données
-│ ├── application/ # Couche Application (Use Cases, Services)
-│ │ ├── use_cases/ # Implémentation des UC
-│ │ └── services/ # Services applicatifs
-│ └── infrastructure/ # Couche Infrastructure (Adapters)
-│ ├── web/ # Contrôleurs Rails, Serializers
-│ ├── persistence/ # ActiveRecord Models, Repositories
-│ └── external/ # Clients services externes
-├── config/ # Configuration Rails
-└── spec/ # Tests (unit, integration, features)
-```
+
+![Architecture Hexagonale](assets/architecture_overview/Hexagonal_Architecture_Tree.png)
 
 ## Flux de dépendances
-Infrastructure → Application → Domain
-↑ ↑ ↑
-Frameworks Use Cases Business Rules
-↑ ↑ ↑
-Rails API Services Entities/VOs
+
+![Flux de dépendances](assets/architecture_overview/Dependency_Flow.png)
 
 **Aucune dépendance inverse n'est permise** : Le domaine ne connaît pas l'application qui ne connaît pas l'infrastructure.
 

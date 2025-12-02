@@ -1,0 +1,53 @@
+@startuml Project_Tree_Phase3
+
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Monospaced
+skinparam legendBackgroundColor #FEFEFE
+
+title Arborescence des fichiers Phase 3
+
+salt
+{
+  {T
+    + **brokerx/**
+    ++ docker-compose.lb.yml | <color:green>CRÉÉ</color>
+    ++ nginx/
+    +++ nginx.conf | <color:green>CRÉÉ</color>
+    ++ app/
+    +++ application/services/
+    ++++ trading_saga.rb | <color:green>CRÉÉ</color>
+    ++++ outbox_dispatcher.rb | <color:blue>MODIFIÉ</color>
+    +++ middleware/
+    ++++ instance_header_middleware.rb | <color:blue>MODIFIÉ</color>
+    ++ config/observability/grafana/
+    +++ provisioning/ | <color:green>CRÉÉ</color>
+    ++++ datasources/
+    +++++ datasources.yml
+    ++++ dashboards/
+    +++++ dashboards.yml
+    ++ test/unit/
+    +++ trading_saga_test.rb | <color:green>CRÉÉ</color>
+    ++ load/k6/
+    +++ load.js | <color:green>CRÉÉ</color>
+    +++ stress.js | <color:green>CRÉÉ</color>
+    +++ lb_test.js | <color:green>CRÉÉ</color>
+    +++ README.md | <color:green>CRÉÉ</color>
+    ++ docs/
+    +++ architecture/
+    ++++ adr008_redis_cache.md | <color:green>CRÉÉ</color>
+    ++++ adr009_load_balancing.md | <color:green>CRÉÉ</color>
+    ++++ adr010_saga_pattern.md | <color:green>CRÉÉ</color>
+    ++++ arc42/arc42.md | <color:blue>MODIFIÉ</color>
+    +++ phase3/
+    ++++ rapport.md
+    ++++ assets/
+  }
+}
+
+legend right
+  | Couleur | Statut |
+  | <color:green>Vert</color> | Fichier créé |
+  | <color:blue>Bleu</color> | Fichier modifié |
+endlegend
+
+@enduml

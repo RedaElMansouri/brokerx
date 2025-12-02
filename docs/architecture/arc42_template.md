@@ -48,9 +48,5 @@ BrokerX+ est une plateforme de courtage en ligne permettant aux investisseurs pa
 ## 5. Building Block View
 
 ### 5.1 Vue Niveau 1 - Composants Principaux
-```
-BrokerX+ System
-├── Client & Comptes Context
-├── Ordres & Trading Context
-└── Marché & Données Context
-```
+
+![BrokerX Building Blocks](assets/arc42/Arc42_Building_Blocks.png)

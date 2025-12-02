@@ -313,32 +313,32 @@ Voir README racine, section « Phase 2 — Reproductibilité (< 30 min) ».
 
 - UC‑01 — Inscription & Vérification
 
-![UC01_inscription_verification](../use_cases/assets/UC01_inscription_verification.png)
+![UC01_inscription_verification](../use_cases/assets/UC01/UC01_inscription_verification.png)
   Création de compte → statut Pending → validation par lien/email → statut Active.
 
 - UC‑02 — Authentification MFA
 
-![UC02_authentification_mfa](../use_cases/assets/UC02_authentification_mfa.png)
-  Login (email+mot de passe) → envoi code MFA → vérification → émission d’un JWT HS256.
+![UC02_authentification_mfa](../use_cases/assets/UC02/UC02_authentification_mfa.png)
+  Login (email+mot de passe) → envoi code MFA → vérification → émission d'un JWT HS256.
 
-- UC‑05 — Placement d’ordre
+- UC‑05 — Placement d'ordre
 
-![UC05_placement_ordre](../use_cases/assets/UC05_placement_ordre.png)
-  Contrôles pré‑trade, réservation de fonds (ACHAT), persistance, mise en file vers le moteur d’appariement et ACK.
+![UC05_placement_ordre](../use_cases/assets/UC05/UC05_placement_ordre.png)
+  Contrôles pré‑trade, réservation de fonds (ACHAT), persistance, mise en file vers le moteur d'appariement et ACK.
 
 ### UC réalisés — Phase 2
 
 - UC‑03 — Dépôt de fonds idempotent
 
-![UC03_depot_fonds_idempotent](../use_cases/assets/UC03_depot_fonds_idempotent.png)
-  Dépôt avec `Idempotency-Key` garantissant l’absence de doublon (retourne le résultat initial si répété).
+![UC03_depot_fonds_idempotent](../use_cases/assets/UC03/UC03_depot_fonds_idempotent.png)
+  Dépôt avec `Idempotency-Key` garantissant l'absence de doublon (retourne le résultat initial si répété).
 
 - UC‑04 — Données de marché en temps réel (ActionCable)
 
-![UC04_donnees_marche_temps_reel](../use_cases/assets/UC04_donnees_marche_temps_reel.png)
+![UC04_donnees_marche_temps_reel](../use_cases/assets/UC04/UC04_donnees_marche_temps_reel.png)
   Connexion WS `/cable?token=JWT`, abonnement `MarketChannel`, diffusion de messages `quote`/`orderbook`/`status`.
 
 - UC‑06 — Modifier / Annuler un ordre
 
-![UC06_modifier_annuler_ordre](../use_cases/assets/UC06_modifier_annuler_ordre.png)
+![UC06_modifier_annuler_ordre](../use_cases/assets/UC06/UC06_modifier_annuler_ordre.png)
   Remplacement/annulation sous verrouillage optimiste (`lock_version`), libération des fonds réservés le cas échéant.

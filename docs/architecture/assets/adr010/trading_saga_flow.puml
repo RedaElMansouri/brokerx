@@ -1,0 +1,57 @@
+@startuml TradingSaga_Flow
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+
+title TradingSaga - Étapes et Compensations
+
+rectangle "**TradingSaga**" {
+  
+  rectangle "Steps (forward)" #LightGreen {
+    card "1. validate_order" as s1
+    card "2. reserve_funds" as s2
+    card "3. create_order" as s3
+    card "4. submit_to_matching" as s4
+    
+    s1 -right-> s2 : success
+    s2 -right-> s3 : success
+    s3 -right-> s4 : success
+  }
+  
+  rectangle "Compensations (reverse)" #LightCoral {
+    card "release_funds" as c2
+    card "cancel_order" as c3
+    
+    note bottom of c2
+      Annule reserve_funds
+    end note
+    
+    note bottom of c3
+      Annule create_order
+    end note
+  }
+}
+
+s2 ..> c2 : "si échec"
+s3 ..> c3 : "si échec"
+
+note right of s1
+  Vérifie fonds,
+  limites, symbole
+end note
+
+note right of s2
+  Réserve les fonds
+  (buy only)
+end note
+
+note right of s3
+  Persiste l'ordre
+  en DB
+end note
+
+note right of s4
+  Enqueue au
+  MatchingEngine
+end note
+
+@enduml

@@ -17,21 +17,7 @@ En cas d'échec à n'importe quelle étape, nous devons pouvoir annuler (compens
 
 ### Architecture du TradingSaga :
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        TradingSaga                              │
-├─────────────────────────────────────────────────────────────────┤
-│  Steps (forward):                                               │
-│  1. validate_order    → Vérifie fonds, limites, symbole        │
-│  2. reserve_funds     → Réserve les fonds (buy only)           │
-│  3. create_order      → Persiste l'ordre en DB                 │
-│  4. submit_to_matching → Enqueue au MatchingEngine             │
-├─────────────────────────────────────────────────────────────────┤
-│  Compensations (reverse si échec):                              │
-│  - reserve_funds  → release_funds                              │
-│  - create_order   → cancel_order                               │
-└─────────────────────────────────────────────────────────────────┘
-```
+![TradingSaga Flow](assets/adr010/TradingSaga_Flow.png)
 
 ### Implémentation :
 

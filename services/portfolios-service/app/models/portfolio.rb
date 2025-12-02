@@ -2,6 +2,8 @@
 
 class Portfolio < ApplicationRecord
   has_many :portfolio_transactions, dependent: :destroy
+  has_many :fund_reservations, dependent: :destroy
+  has_many :positions, dependent: :destroy
 
   validates :client_id, presence: true
   validates :name, presence: true
