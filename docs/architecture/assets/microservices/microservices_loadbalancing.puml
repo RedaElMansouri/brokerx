@@ -1,0 +1,108 @@
+@startuml Microservices_LoadBalancing_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title BrokerX - Architecture Microservices avec Load Balancing
+
+' Colors
+skinparam component {
+    BackgroundColor<<gateway>> #E8F5E9
+    BackgroundColor<<lb>> #FFF3E0
+    BackgroundColor<<service>> #E3F2FD
+    BackgroundColor<<db>> #FCE4EC
+    BackgroundColor<<infra>> #F3E5F5
+}
+
+' External
+actor "Client" as client
+
+' API Gateway
+package "API Gateway" <<gateway>> {
+    component "Kong\n:8080" as kong
+}
+
+' Load Balancer
+package "Nginx Load Balancer" <<lb>> {
+    component "nginx-lb\n:3001 :3002 :3003" as nginx
+}
+
+' Clients Service
+package "Clients Service" <<service>> {
+    component "clients-1" as c1
+    component "clients-2" as c2
+}
+
+' Portfolios Service
+package "Portfolios Service" <<service>> {
+    component "portfolios-1" as p1
+    component "portfolios-2" as p2
+}
+
+' Orders Service
+package "Orders Service" <<service>> {
+    component "orders-1" as o1
+    component "orders-2" as o2
+    component "orders-3" as o3
+}
+
+' Databases
+package "Databases" <<db>> {
+    database "postgres-clients\n:5433" as db_clients
+    database "postgres-portfolios\n:5434" as db_portfolios
+    database "postgres-orders\n:5435" as db_orders
+}
+
+' Infrastructure
+package "Infrastructure" <<infra>> {
+    component "Redis\n:6379" as redis
+    component "MailHog\n:8025" as mailhog
+}
+
+' Connections
+client --> kong : "HTTP/WS"
+kong --> nginx : "Proxy"
+
+nginx --> c1 : "least_conn"
+nginx --> c2 : "least_conn"
+nginx --> p1 : "least_conn"
+nginx --> p2 : "least_conn"
+nginx --> o1 : "least_conn"
+nginx --> o2 : "least_conn"
+nginx --> o3 : "least_conn"
+
+c1 --> db_clients
+c2 --> db_clients
+p1 --> db_portfolios
+p2 --> db_portfolios
+o1 --> db_orders
+o2 --> db_orders
+o3 --> db_orders
+
+c1 --> redis
+c2 --> redis
+p1 --> redis
+p2 --> redis
+o1 --> redis
+o2 --> redis
+o3 --> redis
+
+c1 --> mailhog
+c2 --> mailhog
+
+note right of nginx
+  **Load Balancing Strategy**
+  - Algorithm: least_conn
+  - Keepalive: enabled
+  - Health checks: /health
+end note
+
+note right of kong
+  **API Gateway Features**
+  - Rate limiting
+  - CORS
+  - Request routing
+  - Correlation ID
+end note
+
+@enduml

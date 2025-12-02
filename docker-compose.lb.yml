@@ -1,0 +1,325 @@
+# docker-compose.lb.yml
+# ============================================================
+# BrokerX - Microservices with Load Balancing
+# ============================================================
+# Étend docker-compose.yml avec:
+# - Plusieurs instances par service
+# - Nginx load balancer devant chaque service
+# - Kong pointe vers Nginx au lieu des services directement
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.lb.yml up -d
+# ============================================================
+
+services:
+  # ===========================================
+  # NGINX LOAD BALANCER
+  # ===========================================
+  nginx-lb:
+    image: nginx:alpine
+    container_name: brokerx-nginx-lb
+    ports:
+      - "8081:8081"  # Nginx status
+    volumes:
+      - ./nginx/nginx.microservices.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - clients-service-1
+      - clients-service-2
+      - portfolios-service-1
+      - portfolios-service-2
+      - orders-service-1
+      - orders-service-2
+      - orders-service-3
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/nginx-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  # ===========================================
+  # CLIENTS SERVICE REPLICAS
+  # ===========================================
+  clients-service-1:
+    build:
+      context: ./services/clients-service
+      dockerfile: Dockerfile
+    container_name: brokerx-clients-1
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-clients
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/0
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      JWT_SECRET_KEY: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INSTANCE_ID: clients-1
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-clients:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      bash -c "
+        bundle exec rails db:create db:migrate 2>/dev/null || true &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  clients-service-2:
+    build:
+      context: ./services/clients-service
+      dockerfile: Dockerfile
+    container_name: brokerx-clients-2
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-clients
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/0
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      JWT_SECRET_KEY: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INSTANCE_ID: clients-2
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-clients:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clients-service-1:
+        condition: service_healthy
+    command: >
+      bash -c "
+        sleep 5 &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  # ===========================================
+  # PORTFOLIOS SERVICE REPLICAS
+  # ===========================================
+  portfolios-service-1:
+    build:
+      context: ./services/portfolios-service
+      dockerfile: Dockerfile
+    container_name: brokerx-portfolios-1
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-portfolios
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/1
+      CLIENTS_SERVICE_URL: http://nginx-lb:3001
+      JWT_SECRET_KEY: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INTERNAL_SERVICE_TOKEN: internal_service_secret_change_in_production
+      INSTANCE_ID: portfolios-1
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-portfolios:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      bash -c "
+        bundle exec rails db:create db:migrate 2>/dev/null || true &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  portfolios-service-2:
+    build:
+      context: ./services/portfolios-service
+      dockerfile: Dockerfile
+    container_name: brokerx-portfolios-2
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-portfolios
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/1
+      CLIENTS_SERVICE_URL: http://nginx-lb:3001
+      JWT_SECRET_KEY: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INTERNAL_SERVICE_TOKEN: internal_service_secret_change_in_production
+      INSTANCE_ID: portfolios-2
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-portfolios:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      portfolios-service-1:
+        condition: service_healthy
+    command: >
+      bash -c "
+        sleep 5 &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  # ===========================================
+  # ORDERS SERVICE REPLICAS (3 instances)
+  # ===========================================
+  orders-service-1:
+    build:
+      context: ./services/orders-service
+      dockerfile: Dockerfile
+    container_name: brokerx-orders-1
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-orders
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/2
+      CLIENTS_SERVICE_URL: http://nginx-lb:3001
+      PORTFOLIOS_SERVICE_URL: http://nginx-lb:3002
+      JWT_SECRET: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INTERNAL_SERVICE_TOKEN: internal_service_secret_change_in_production
+      ACTION_CABLE_URL: ws://localhost:8080/cable
+      INSTANCE_ID: orders-1
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      bash -c "
+        bundle exec rails db:create db:migrate 2>/dev/null || true &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  orders-service-2:
+    build:
+      context: ./services/orders-service
+      dockerfile: Dockerfile
+    container_name: brokerx-orders-2
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-orders
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/2
+      CLIENTS_SERVICE_URL: http://nginx-lb:3001
+      PORTFOLIOS_SERVICE_URL: http://nginx-lb:3002
+      JWT_SECRET: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INTERNAL_SERVICE_TOKEN: internal_service_secret_change_in_production
+      ACTION_CABLE_URL: ws://localhost:8080/cable
+      INSTANCE_ID: orders-2
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orders-service-1:
+        condition: service_healthy
+    command: >
+      bash -c "
+        sleep 5 &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  orders-service-3:
+    build:
+      context: ./services/orders-service
+      dockerfile: Dockerfile
+    container_name: brokerx-orders-3
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: postgres-orders
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_URL: redis://redis:6379/2
+      CLIENTS_SERVICE_URL: http://nginx-lb:3001
+      PORTFOLIOS_SERVICE_URL: http://nginx-lb:3002
+      JWT_SECRET: microservices_jwt_secret_change_in_production
+      SECRET_KEY_BASE: microservices_secret_base_change_in_production
+      INTERNAL_SERVICE_TOKEN: internal_service_secret_change_in_production
+      ACTION_CABLE_URL: ws://localhost:8080/cable
+      INSTANCE_ID: orders-3
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orders-service-1:
+        condition: service_healthy
+    command: >
+      bash -c "
+        sleep 8 &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - brokerx-network
+
+  # ===========================================
+  # OVERRIDE KONG TO USE NGINX LB
+  # ===========================================
+  kong:
+    volumes:
+      - ./services/gateway/kong.lb.yml:/kong/kong.yml:ro
+
+networks:
+  brokerx-network:
+    driver: bridge

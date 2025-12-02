@@ -1,12 +1,15 @@
-# docker-compose.microservices.yml
+# docker-compose.yml
 # ============================================================
 # BrokerX - Architecture Microservices
 # ============================================================
 #
-# Usage:
-#   docker compose -f docker-compose.microservices.yml up -d
-#   docker compose -f docker-compose.microservices.yml logs -f
-#   docker compose -f docker-compose.microservices.yml down -v
+# Usage (single instance):
+#   docker compose up -d
+#   docker compose logs -f
+#   docker compose down -v
+#
+# Usage (with load balancing):
+#   docker compose -f docker-compose.yml -f docker-compose.lb.yml up -d
 #
 # Ports:
 #   - 8080:  Kong API Gateway
@@ -286,3 +289,7 @@ volumes:
   postgres_clients_data:
   postgres_portfolios_data:
   postgres_orders_data:
+
+networks:
+  default:
+    name: brokerx-network
