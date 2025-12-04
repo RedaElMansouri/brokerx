@@ -1,0 +1,96 @@
+@startuml Event_Driven_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam roundcorner 10
+
+title Architecture Événementielle - Vue Conceptuelle
+
+skinparam component {
+    BackgroundColor<<producer>> #E3F2FD
+    BackgroundColor<<consumer>> #E8F5E9
+    BackgroundColor<<bus>> #FFF8E1
+}
+
+package "Producteurs d'Événements" {
+    component "Orders Service" as OS <<producer>> {
+        [OrdersController]
+        [TradingSaga]
+        [MatchingEngine]
+    }
+    
+    component "Clients Service" as CS <<producer>> {
+        [AuthController]
+        [VerificationController]
+    }
+}
+
+package "Event Bus (Redis Pub/Sub)" as EB <<bus>> {
+    queue "eventbus:order.requested" as Q1
+    queue "eventbus:funds.reserved" as Q2
+    queue "eventbus:funds.reservation_failed" as Q3
+    queue "eventbus:execution.report" as Q4
+    queue "eventbus:trade.executed" as Q5
+    queue "eventbus:order.cancelled" as Q6
+    queue "eventbus:position.updated" as Q7
+}
+
+package "Consommateurs d'Événements" {
+    component "Portfolios Service" as PS <<consumer>> {
+        [OrderRequestedHandler]
+        [OrderCancelledHandler]
+        [TradeExecutedHandler]
+    }
+    
+    component "Orders Service" as OS2 <<consumer>> {
+        [FundsReservedHandler]
+        [FundsReservationFailedHandler]
+        [FundsReleasedHandler]
+    }
+}
+
+' Publishing
+OS --> Q1 : publish
+OS --> Q4 : publish
+OS --> Q5 : publish
+OS --> Q6 : publish
+
+CS --> EB : client.registered\nclient.verified
+
+PS --> Q2 : publish
+PS --> Q3 : publish
+PS --> Q7 : publish
+
+' Subscribing
+Q1 --> PS : subscribe
+Q4 --> PS : subscribe
+Q5 --> PS : subscribe
+Q6 --> PS : subscribe
+
+Q2 --> OS2 : subscribe
+Q3 --> OS2 : subscribe
+
+note bottom of EB
+    **Redis Pub/Sub (DB 15)**
+    - Latence < 1ms
+    - Pas de persistance native
+    - Outbox pattern pour garantie
+    - Idempotence via event_id
+end note
+
+note right of OS
+    **Événements Publiés:**
+    - order.requested
+    - execution.report
+    - trade.executed
+    - order.cancelled
+end note
+
+note left of PS
+    **Événements Consommés:**
+    - order.requested → reserve funds
+    - trade.executed → update position
+    - order.cancelled → release funds
+end note
+
+@enduml

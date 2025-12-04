@@ -1,0 +1,140 @@
+@startuml UC07_Saga_Choreographiee
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam BoxPadding 10
+
+title UC-07: Saga Chorégraphiée - Appariement d'Ordres\n(Architecture Événementielle)
+
+box "Client" #LightBlue
+    participant "Web Client" as Client
+end box
+
+box "API Gateway" #LightGreen
+    participant "Kong\n:8080" as Kong
+end box
+
+box "Orders Service" #LightYellow
+    participant "OrdersController" as OC
+    participant "TradingSaga" as Saga
+    participant "MatchingEngine" as ME
+    participant "EventPublisher" as EP1
+end box
+
+box "Portfolios Service" #LightPink
+    participant "EventSubscriber" as ES
+    participant "OrderRequestedHandler" as ORH
+    participant "Portfolio" as PF
+    participant "EventPublisher" as EP2
+end box
+
+box "Infrastructure" #LightGray
+    database "Redis\nEventBus\nDB:15" as Redis
+    database "PostgreSQL\nOrders" as DBOrders
+    database "PostgreSQL\nPortfolios" as DBPortf
+end box
+
+== Phase 1: Création de l'Ordre ==
+Client -> Kong: POST /api/v1/orders\n{symbol: "AAPL", direction: "buy", quantity: 10}
+activate Kong
+Kong -> OC: Route vers Orders Service
+activate OC
+
+OC -> Saga: execute(params)
+activate Saga
+
+Saga -> Saga: Step 1: Validate order
+note right: Validation du symbole,\nquantité, type d'ordre
+
+Saga -> DBOrders: Create Order\n(status: pending_funds)
+activate DBOrders
+DBOrders --> Saga: Order created
+deactivate DBOrders
+
+== Phase 2: Réservation des Fonds (Événementielle) ==
+Saga -> EP1: publish("order.requested")
+activate EP1
+EP1 -> Redis: PUBLISH eventbus:order.requested
+activate Redis
+note over Redis: Événement stocké dans\nSorted Set pour replay
+
+Redis --> EP1: OK
+deactivate EP1
+
+Redis -> ES: Message reçu
+activate ES
+deactivate Redis
+
+ES -> ORH: handle(event)
+activate ORH
+
+ORH -> DBPortf: Find Portfolio(client_id)
+activate DBPortf
+DBPortf --> ORH: Portfolio
+deactivate DBPortf
+
+alt Fonds suffisants
+    ORH -> DBPortf: Transaction:\n1. Create FundReservation\n2. Update available_balance
+    activate DBPortf
+    DBPortf --> ORH: Success
+    deactivate DBPortf
+    
+    ORH -> EP2: publish("funds.reserved")
+    activate EP2
+    EP2 -> Redis: PUBLISH eventbus:funds.reserved
+    activate Redis
+    Redis --> EP2: OK
+    deactivate EP2
+    
+else Fonds insuffisants
+    ORH -> EP2: publish("funds.reservation_failed")
+    EP2 -> Redis: PUBLISH
+end
+
+deactivate ORH
+deactivate ES
+
+== Phase 3: Traitement de la Réponse ==
+Redis -> Saga: Message funds.reserved
+deactivate Redis
+
+Saga -> DBOrders: Update Order\n(status: new, reserved_amount)
+activate DBOrders
+DBOrders --> Saga: Updated
+deactivate DBOrders
+
+== Phase 4: Matching ==
+Saga -> ME: enqueue_order(order)
+activate ME
+
+ME -> ME: Match buy/sell orders\n(Price-Time Priority)
+
+alt Match trouvé
+    ME -> DBOrders: Create Trade\nUpdate Orders (filled)
+    activate DBOrders
+    DBOrders --> ME: Trade created
+    deactivate DBOrders
+    
+    ME -> EP1: publish("execution.report")
+    EP1 -> Redis: PUBLISH
+    
+    ME -> EP1: publish("trade.executed")
+    EP1 -> Redis: PUBLISH
+end
+
+deactivate ME
+deactivate Saga
+
+OC --> Kong: 201 Created\n{order_id, status}
+deactivate OC
+
+Kong --> Client: Response
+deactivate Kong
+
+== Phase 5: Notification Temps Réel (UC-08) ==
+Redis -> OC: execution.report
+OC -> Client: WebSocket:\n{type: "order.filled", ...}
+note right of Client: ActionCable\nChannel: orders_{client_id}
+
+@enduml

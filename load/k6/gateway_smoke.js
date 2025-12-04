@@ -27,7 +27,7 @@ function headers() {
 
 export default function () {
   // Portfolio via gateway
-    const p = http.get(`${BASE_URL}/api/v1/portfolio`, { headers: headers() });
+    const p = http.get(`${BASE_URL}/api/v1/portfolios`, { headers: headers() });
     check(p, { 'portfolio 200/401': (r) => [200,401].includes(r.status) });
 
   // One-time deposit per VU to ensure buys succeed

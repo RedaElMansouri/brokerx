@@ -1,0 +1,80 @@
+@startuml Deployment_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam roundcorner 10
+
+title Architecture de Déploiement - Docker Compose
+
+node "Docker Host" {
+    
+    frame "docker-compose.yml" as DC {
+        
+        package "API Gateway" #C8E6C9 {
+            component "Kong\n:8080" as Kong
+        }
+        
+        package "Load Balancer (optional)" #C8E6C9 {
+            component "Nginx\nLeast Conn" as Nginx
+        }
+        
+        package "Microservices" #E3F2FD {
+            component "Clients\n:3001" as C1
+            component "Portfolios\n:3002" as P1
+            component "Orders\n:3003" as O1
+        }
+        
+        package "Multi-Instance (docker-compose.lb.yml)" #E3F2FD {
+            component "Clients-1" as C1a
+            component "Clients-2" as C2a
+            component "Portfolios-1" as P1a
+            component "Portfolios-2" as P2a
+            component "Orders-1" as O1a
+            component "Orders-2" as O2a
+            component "Orders-3" as O3a
+        }
+        
+        package "Databases" #FFF3E0 {
+            database "PostgreSQL\nClients\n:5433" as DBC
+            database "PostgreSQL\nPortfolios\n:5434" as DBP
+            database "PostgreSQL\nOrders\n:5435" as DBO
+        }
+        
+        package "Infrastructure" #F3E5F5 {
+            component "Redis\n:6379" as Redis
+            component "MailHog\n:8025" as Mail
+        }
+        
+        package "Observability (--profile observability)" #FCE4EC {
+            component "Prometheus\n:9090" as Prom
+            component "Grafana\n:3004" as Graf
+        }
+    }
+}
+
+' Connections
+Kong --> C1
+Kong --> P1
+Kong --> O1
+
+Nginx --> O1a
+Nginx --> O2a
+Nginx --> O3a
+
+C1 --> DBC
+P1 --> DBP
+O1 --> DBO
+
+C1 --> Redis
+P1 --> Redis
+O1 --> Redis
+
+C1 --> Mail
+
+Prom --> C1 : /metrics
+Prom --> P1 : /metrics
+Prom --> O1 : /metrics
+Prom --> Kong : /metrics
+
+Graf --> Prom
+
+@enduml

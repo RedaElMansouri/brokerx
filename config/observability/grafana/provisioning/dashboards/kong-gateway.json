@@ -1,0 +1,75 @@
+{
+    "annotations": { "list": [] },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "panels": [
+    {
+        "type": "stat",
+        "title": "Gateway Total Requests",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "kong_nginx_requests_total", "legendFormat": "total" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+        "type": "timeseries",
+        "title": "Requests Rate (req/s)",
+        "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "rate(kong_nginx_requests_total[1m])", "legendFormat": "rps" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Active Connections",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "kong_nginx_connections_total{state=\"active\"}", "legendFormat": "active" },
+            { "expr": "kong_nginx_connections_total{state=\"reading\"}", "legendFormat": "reading" },
+            { "expr": "kong_nginx_connections_total{state=\"writing\"}", "legendFormat": "writing" },
+            { "expr": "kong_nginx_connections_total{state=\"waiting\"}", "legendFormat": "waiting" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Datastore Reachable",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "kong_datastore_reachable", "legendFormat": "reachable" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Lua VM Memory (MB)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "sum(kong_memory_workers_lua_vms_bytes) / 1024 / 1024", "legendFormat": "lua vm MB" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Shared Dict Usage (KB)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "sum by (shared_dict)(kong_memory_lua_shared_dict_bytes) / 1024", "legendFormat": "{{shared_dict}}" }
+        ]
+    }
+    ],
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["kong", "gateway", "brokerx"],
+    "templating": { "list": [] },
+    "time": { "from": "now-15m", "to": "now" },
+    "timezone": "browser",
+    "title": "Kong / Gateway",
+    "uid": "kong-gateway-v2",
+    "version": 1
+}

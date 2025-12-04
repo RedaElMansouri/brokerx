@@ -1,0 +1,76 @@
+@startuml Grafana_Dashboard_Overview
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam roundcorner 10
+
+title Dashboards Grafana - Phase 3
+
+rectangle "Dashboard: BrokerX Golden Signals" as GS #E3F2FD {
+    rectangle "RPS (req/s)" as RPS #BBDEFB {
+        note right: sum(rate(http_requests_total[1m]))
+    }
+    
+    rectangle "HTTP Latency p95" as Lat #BBDEFB {
+        note right: histogram_quantile(0.95, ...)
+    }
+    
+    rectangle "HTTP by Status" as Status #BBDEFB {
+        note right: 2xx / 4xx / 5xx rates
+    }
+    
+    rectangle "Matching Queue Size" as Queue #BBDEFB {
+        note right: matching_queue_size
+    }
+    
+    rectangle "WebSocket Connections" as WS #BBDEFB {
+        note right: cable_connections
+    }
+    
+    rectangle "Orders/Trades Rate" as Trades #BBDEFB {
+        note right: orders_accepted_total\ntrades_executed_total
+    }
+}
+
+rectangle "Dashboard: Kong Gateway" as Kong #E8F5E9 {
+    rectangle "Requests by Route" as Routes #C8E6C9 {
+        note right: kong_http_requests_total
+    }
+    
+    rectangle "Latency by Service" as KLat #C8E6C9 {
+        note right: kong_latency_ms
+    }
+    
+    rectangle "Bandwidth" as BW #C8E6C9 {
+        note right: kong_bandwidth bytes
+    }
+}
+
+rectangle "Dashboard: Saga Monitoring" as Saga #FFF3E0 {
+    rectangle "Saga Started/Completed" as SC #FFE0B2 {
+        note right: saga_started_total\nsaga_completed_total
+    }
+    
+    rectangle "Compensation Rate" as Comp #FFE0B2 {
+        note right: saga_compensations_total
+    }
+    
+    rectangle "Step Duration" as Steps #FFE0B2 {
+        note right: saga_step_duration_seconds
+    }
+}
+
+rectangle "Dashboard: EventBus" as EB #F3E5F5 {
+    rectangle "Events Published" as Pub #E1BEE7 {
+        note right: eventbus_published_total
+    }
+    
+    rectangle "Events Processed" as Proc #E1BEE7 {
+        note right: eventbus_processed_total
+    }
+    
+    rectangle "Handler Errors" as Err #E1BEE7 {
+        note right: eventbus_handler_errors_total
+    }
+}
+
+@enduml

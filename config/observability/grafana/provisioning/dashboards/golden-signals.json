@@ -1,0 +1,123 @@
+{
+    "annotations": { "list": [] },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "panels": [
+    {
+        "type": "stat",
+        "title": "Total Orders",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "orders_service_orders_total", "legendFormat": "orders" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Pending Orders",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "orders_service_pending_orders", "legendFormat": "pending" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Executed Orders",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "orders_service_executed_orders", "legendFormat": "executed" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Total Volume ($)",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "orders_service_total_volume", "legendFormat": "volume" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+        "type": "timeseries",
+        "title": "Orders by Type",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "orders_service_buy_orders_total", "legendFormat": "buy" },
+            { "expr": "orders_service_sell_orders_total", "legendFormat": "sell" }
+        ]
+    },
+    {
+        "type": "timeseries",
+        "title": "Database Connections",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "clients_service_database_connections", "legendFormat": "clients" },
+            { "expr": "portfolios_service_database_connections", "legendFormat": "portfolios" },
+            { "expr": "orders_service_database_connections", "legendFormat": "orders" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Total Clients",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "clients_service_clients_total", "legendFormat": "clients" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Verified Clients",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "clients_service_verified_clients_total", "legendFormat": "verified" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Total Portfolios",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "portfolios_service_portfolios_total", "legendFormat": "portfolios" }
+        ]
+    },
+    {
+        "type": "stat",
+        "title": "Total Portfolio Value ($)",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "portfolios_service_total_value", "legendFormat": "value" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+        "type": "timeseries",
+        "title": "Service Uptime (minutes)",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "targets": [
+            { "expr": "clients_service_uptime_seconds / 60", "legendFormat": "clients" },
+            { "expr": "portfolios_service_uptime_seconds / 60", "legendFormat": "portfolios" },
+            { "expr": "orders_service_uptime_seconds / 60", "legendFormat": "orders" }
+        ]
+    }
+    ],
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["brokerx", "golden-signals"],
+    "templating": { "list": [] },
+    "time": { "from": "now-15m", "to": "now" },
+    "timezone": "browser",
+    "title": "BrokerX - Golden Signals",
+    "uid": "golden-signals-v2",
+    "version": 1
+}

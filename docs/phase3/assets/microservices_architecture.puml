@@ -1,0 +1,113 @@
+@startuml Microservices_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam roundcorner 10
+
+title BrokerX - Architecture Microservices Phase 3
+
+skinparam component {
+    BackgroundColor<<service>> #E1F5FE
+    BackgroundColor<<gateway>> #C8E6C9
+    BackgroundColor<<database>> #FFF3E0
+    BackgroundColor<<infra>> #F3E5F5
+}
+
+package "External" {
+    [Web Client] as Client
+    [Mobile Client] as Mobile
+}
+
+package "API Gateway Layer" {
+    component "Kong API Gateway\n:8080" as Kong <<gateway>>
+    note right of Kong
+        - Rate Limiting (100/min)
+        - JWT Validation
+        - CORS Headers
+        - Prometheus Metrics
+    end note
+}
+
+package "Microservices" {
+    component "Clients Service\n:3001" as ClientsSvc <<service>> {
+        [AuthController]
+        [ClientsController]
+        [JwtService]
+        [MfaService]
+    }
+    
+    component "Portfolios Service\n:3002" as PortfoliosSvc <<service>> {
+        [PortfoliosController]
+        [DepositsController]
+        [InternalController]
+        [OrderRequestedHandler]
+    }
+    
+    component "Orders Service\n:3003" as OrdersSvc <<service>> {
+        [OrdersController]
+        [MarketDataController]
+        [TradingSaga]
+        [MatchingEngine]
+        [FundsHandlers]
+        [OrdersChannel]
+    }
+}
+
+package "Load Balancer" {
+    component "Nginx LB\n(optional)" as Nginx <<gateway>>
+}
+
+package "Data Layer" {
+    database "PostgreSQL\nClients\n:5433" as DBClients <<database>>
+    database "PostgreSQL\nPortfolios\n:5434" as DBPortfolios <<database>>
+    database "PostgreSQL\nOrders\n:5435" as DBOrders <<database>>
+}
+
+package "Infrastructure" {
+    component "Redis\n:6379" as Redis <<infra>> {
+        [DB 0: Clients Cache]
+        [DB 1: Portfolios Cache]
+        [DB 2: Orders Cache]
+        [DB 15: EventBus]
+    }
+    
+    component "MailHog\n:8025" as Mail <<infra>>
+}
+
+package "Observability" {
+    component "Prometheus\n:9090" as Prom <<infra>>
+    component "Grafana\n:3004" as Grafana <<infra>>
+}
+
+' Connections
+Client --> Kong
+Mobile --> Kong
+
+Kong --> ClientsSvc : /api/v1/clients\n/api/v1/auth
+Kong --> PortfoliosSvc : /api/v1/portfolios\n/api/v1/deposits
+Kong --> OrdersSvc : /api/v1/orders\n/api/v1/market_data
+Kong ..> Nginx : optional\nload balanced
+
+Nginx --> OrdersSvc : Round-robin
+
+ClientsSvc --> DBClients
+PortfoliosSvc --> DBPortfolios
+OrdersSvc --> DBOrders
+
+ClientsSvc --> Redis : Cache (DB 0)
+PortfoliosSvc --> Redis : Cache (DB 1)\nEventBus (DB 15)
+OrdersSvc --> Redis : Cache (DB 2)\nEventBus (DB 15)
+
+ClientsSvc --> Mail : SMTP
+
+' EventBus connections
+OrdersSvc <..> PortfoliosSvc : EventBus\n(Redis Pub/Sub)
+
+' Observability
+ClientsSvc ..> Prom : /metrics
+PortfoliosSvc ..> Prom : /metrics
+OrdersSvc ..> Prom : /metrics
+Kong ..> Prom : /metrics
+Prom --> Grafana
+
+@enduml

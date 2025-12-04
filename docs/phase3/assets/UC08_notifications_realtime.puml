@@ -1,0 +1,93 @@
+@startuml UC08_Notifications_RealTime
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+title UC-08: Confirmation d'Exécution & Notifications Temps Réel
+
+box "Client" #LightBlue
+    participant "Web Browser" as Browser
+    participant "JavaScript\nActionCable Client" as JSClient
+end box
+
+box "Orders Service" #LightYellow
+    participant "OrdersChannel\n(WebSocket)" as WS
+    participant "MatchingEngine" as ME
+    participant "OutboxDispatcher" as OD
+    participant "ExecutionReportMailer" as Mailer
+end box
+
+box "Infrastructure" #LightGray
+    database "Redis\n(ActionCable)" as Redis
+    database "Outbox\nEvents" as Outbox
+end box
+
+box "Mail" #LightPink
+    participant "MailHog\n(dev)" as Mail
+end box
+
+== Phase 1: Connexion WebSocket ==
+Browser -> WS: WebSocket Connect\nwss://localhost:3003/cable
+activate WS
+WS --> Browser: Connected
+
+Browser -> JSClient: subscribe("orders_{client_id}")
+JSClient -> WS: Subscribe command
+WS -> Redis: SUBSCRIBE orders_123
+activate Redis
+Redis --> WS: Subscribed
+WS --> JSClient: Subscription confirmed
+
+== Phase 2: Exécution d'un Trade ==
+note over ME: MatchingEngine\nfind matching orders
+
+ME -> ME: Match BUY order #456\nwith SELL order #789
+
+ME -> Outbox: INSERT outbox_event\n(type: execution.report,\nstatus: pending)
+activate Outbox
+
+ME -> Outbox: INSERT outbox_event\n(type: trade.executed)
+
+== Phase 3: Dispatch & Notification ==
+OD -> Outbox: SELECT * FROM outbox_events\nWHERE status = 'pending'
+Outbox --> OD: [execution.report, trade.executed]
+deactivate Outbox
+
+loop Pour chaque événement
+    OD -> OD: Process event
+
+    OD -> Redis: PUBLISH orders_123\n{type: "order.filled", ...}
+    Redis -> WS: Message received
+    deactivate Redis
+    
+    WS -> JSClient: Push notification
+    JSClient -> Browser: Update UI\n"Your order has been filled!"
+    
+    OD -> Mailer: deliver_later\n(execution_report)
+    activate Mailer
+    Mailer -> Mail: Send email\n"Trade Confirmation"
+    deactivate Mailer
+    
+    OD -> Outbox: UPDATE status = 'processed'
+end
+
+deactivate WS
+
+== Payload WebSocket ==
+note over JSClient
+    {
+        "type": "execution_report",
+        "data": {
+            "order_id": 456,
+            "status": "filled",
+            "symbol": "AAPL",
+            "quantity": 10,
+            "fill_price": 175.50,
+            "trade_id": "trade_101",
+            "timestamp": "2025-12-04T10:30:00Z"
+        }
+    }
+end note
+
+@enduml

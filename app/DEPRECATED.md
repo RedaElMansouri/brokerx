@@ -1,10 +1,10 @@
-# ⚠️ DEPRECATED - Monolith Architecture
+# DEPRECATED - Monolith Architecture
 
 > **Date de dépréciation**: 2 décembre 2025  
 > **Remplacé par**: Architecture Microservices (`services/`)  
 > **Statut**: Conservé pour rollback uniquement
 
-## 🚨 Avertissement
+## Avertissement
 
 Ce dossier `app/` contient le code du **monolithe BrokerX** qui est maintenant **DÉPRÉCIÉ**.
 
@@ -14,7 +14,7 @@ L'architecture active est désormais basée sur les **microservices** situés da
 - `services/orders-service/` - Gestion des ordres
 - `services/gateway/` - Kong API Gateway
 
-## 📋 Migration
+## Migration
 
 | Ancien (Monolithe) | Nouveau (Microservices) |
 |-------------------|------------------------|
@@ -23,7 +23,7 @@ L'architecture active est désormais basée sur les **microservices** situés da
 | `app/facades/orders_facade.rb` | `services/orders-service/` |
 | `docker-compose.monolith.yml` | `docker-compose.yml` |
 
-## 🔄 Rollback
+## Rollback
 
 Si vous devez revenir au monolithe:
 
@@ -35,18 +35,3 @@ Si vous devez revenir au monolithe:
 git checkout main
 docker compose -f docker-compose.monolith.yml up -d
 ```
-
-## ⏳ Plan de suppression
-
-Ce code sera supprimé définitivement après:
-1. ✅ Validation complète des tests E2E microservices
-2. ✅ Période de stabilisation de 30 jours en production
-3. ✅ Confirmation de l'équipe
-
-## 📞 Contact
-
-Pour toute question concernant la migration, contactez l'équipe de développement.
-
----
-
-> **Note**: Ne modifiez PAS ce code. Toute nouvelle fonctionnalité doit être implémentée dans les microservices.

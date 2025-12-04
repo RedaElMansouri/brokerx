@@ -6,13 +6,13 @@ Bienvenue sur BrokerX. Ce dépôt contient une API Rails 7 avec une architecture
 
 ## 🏗️ Architecture
 
-> **⚠️ IMPORTANT**: Le monolithe (`app/`) est maintenant **DÉPRÉCIÉ**.  
+> **IMPORTANT**: Le monolithe (`app/`) est maintenant **DÉPRÉCIÉ**.  
 > L'architecture active est basée sur les **microservices** (`services/`).
 
 | Architecture | Docker Compose | Statut |
 |--------------|----------------|--------|
-| **Microservices** | `docker-compose.yml` | ✅ Active |
-| Monolithe | `docker-compose.monolith.yml` | ⚠️ Déprécié |
+| **Microservices** | `docker-compose.yml` |  Active |
+| Monolithe | `docker-compose.monolith.yml` | Déprécié |
 
 ### Services Microservices
 

@@ -1,0 +1,70 @@
+@startuml UC07_Compensation_Flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+title UC-07: Flux de Compensation\n(Échec Réservation de Fonds)
+
+box "Orders Service" #LightYellow
+    participant "TradingSaga" as Saga
+    participant "FundsReservation\nFailedHandler" as FRF
+    participant "Order" as Order
+end box
+
+box "Portfolios Service" #LightPink
+    participant "OrderRequestedHandler" as ORH
+    participant "Portfolio" as PF
+end box
+
+box "Infrastructure" #LightGray
+    database "Redis EventBus" as Redis
+    database "DB Orders" as DBO
+    database "DB Portfolios" as DBP
+end box
+
+== Création Ordre ==
+Saga -> DBO: Create Order\n(status: pending_funds)
+activate DBO
+DBO --> Saga: Order #123
+deactivate DBO
+
+Saga -> Redis: PUBLISH order.requested\n{order_id: 123, estimated_cost: 5000}
+activate Redis
+
+== Vérification Fonds ==
+Redis -> ORH: order.requested
+activate ORH
+
+ORH -> DBP: SELECT balance FROM portfolios\nWHERE client_id = ?
+activate DBP
+DBP --> ORH: available_balance: $1000
+deactivate DBP
+
+note right of ORH #Pink: $1000 < $5000\nFonds insuffisants!
+
+ORH -> Redis: PUBLISH funds.reservation_failed\n{order_id: 123, reason: "Insufficient funds"}
+deactivate ORH
+
+== Compensation ==
+Redis -> FRF: funds.reservation_failed
+deactivate Redis
+activate FRF
+
+FRF -> FRF: Idempotency check:\norder.status == 'pending_funds' ?
+
+FRF -> DBO: Transaction:\nUPDATE orders\nSET status = 'rejected',\n    rejection_reason = 'Insufficient funds'
+activate DBO
+DBO --> FRF: Updated
+deactivate DBO
+
+FRF -> FRF: Create OutboxEvent\n(order.rejected)
+
+note right of FRF #LightGreen: Ordre marqué comme rejeté\nAucune réservation à libérer
+
+deactivate FRF
+
+== Notification Client ==
+note over Redis, Saga: WebSocket broadcast:\n{type: "order.rejected", reason: "Insufficient funds"}
+
+@enduml
