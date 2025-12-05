@@ -34,6 +34,7 @@ La Phase 3 du projet BrokerX vise à transformer l'application d'une architectur
 | Objectif | Description | Statut |
 |----------|-------------|--------|
 | **Migration Microservices** | Décomposition du monolith en 3 services indépendants | Complété |
+| **Web Client** | Interface web Rails connectée aux microservices via Kong | Complété |
 | **UC-07 Appariement** | Matching engine avec saga chorégraphiée | Complété |
 | **UC-08 Notifications** | Notifications temps réel via WebSocket | Complété |
 | **Architecture Événementielle** | Communication asynchrone via EventBus | Complété |
@@ -185,6 +186,24 @@ end
 
 ![Décomposition des Services](assets/microservices_architecture.png)
 
+#### Web Client (:8888)
+
+| Composant | Responsabilité |
+|-----------|----------------|
+| **StaticController** | Page d'accueil, login/register modals |
+| **PortfoliosController** | Vue du portefeuille |
+| **OrdersController** | Interface de trading |
+| **Api::V1::ProxyController** | Proxy API vers Kong Gateway |
+| **HealthController** | Health check endpoint |
+
+Le Web Client est une application Rails **sans base de données** qui :
+- Sert les vues HTML identiques au monolith
+- Proxy toutes les requêtes API vers Kong Gateway
+- Gère l'authentification JWT côté client (localStorage)
+- Se connecte aux WebSockets via Kong pour les notifications temps réel
+
+![Architecture Web Client](assets/web_client_architecture.png)
+
 #### Clients Service (:3001)
 
 | Composant | Responsabilité |
@@ -290,7 +309,54 @@ EventBus.subscribe_async(
 
 ![Architecture de Déploiement](assets/deployment_architecture.png)
 
-### 7.2 Configuration Load Balancing
+#### Services et Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **Web Client** | 8888 | Interface utilisateur Rails |
+| **Kong Gateway** | 8080 | API Gateway (routing, auth) |
+| **Clients Service** | 3001 | Authentification, MFA |
+| **Portfolios Service** | 3002 | Gestion portefeuilles |
+| **Orders Service** | 3003 | Trading, matching engine |
+| **Redis** | 6379 | Cache + EventBus |
+| **PostgreSQL** | 5432-5434 | Bases de données par service |
+| **Grafana** | 3050 | Dashboards observabilité |
+| **Prometheus** | 9090 | Collecte métriques |
+
+### 7.2 Web Client - Proxy Architecture
+
+Le Web Client utilise le pattern **Backend-for-Frontend (BFF)** :
+
+![Web Client Proxy Flow](assets/web_client_proxy_flow.png)
+
+```ruby
+# services/web-client/app/controllers/api/v1/proxy_controller.rb
+class Api::V1::ProxyController < ApplicationController
+  def clients_create
+    proxy_post('/api/v1/clients')
+  end
+
+  def orders_create
+    proxy_post('/api/v1/orders')
+  end
+
+  private
+
+  def proxy_post(path)
+    response = @client.post(path) do |req|
+      req.headers = proxy_headers
+      req.body = request.raw_post
+    end
+    render json: response.body, status: response.status
+  end
+
+  def kong_gateway_url
+    ENV.fetch('KONG_GATEWAY_URL', 'http://kong:8000')
+  end
+end
+```
+
+### 7.3 Configuration Load Balancing
 
 ```yaml
 # docker-compose.lb.yml (multi-replica)
@@ -472,7 +538,7 @@ Trois dashboards Grafana ont été implémentés pour surveiller l'ensemble de l
 
 #### Dashboard BrokerX Microservices
 
-![Dashboard BrokerX Microservices](assets/Grafana%20-%20Microservice.png)
+![Dashboard BrokerX Microservices](assets/Grafana_Microservice.png)
 
 Ce dashboard offre une vue d'ensemble des métriques métier :
 - **Total Clients/Portfolios/Orders** : compteurs en temps réel
@@ -482,7 +548,7 @@ Ce dashboard offre une vue d'ensemble des métriques métier :
 
 #### Dashboard Golden Signals
 
-![Dashboard Golden Signals](assets/Grafana%20-%20Golden%20signals.png)
+![Dashboard Golden Signals](assets/Grafana_GoldenSignals.png)
 
 Métriques surveillées :
 - **Latency**: `histogram_quantile(0.95, http_request_duration_seconds_bucket)`
@@ -505,7 +571,7 @@ Métriques surveillées :
 
 #### Dashboard Kong Gateway
 
-![Dashboard Kong Gateway](assets/Grafana%20-%20Kong%3AGateway.png)
+![Dashboard Kong Gateway](assets/Grafana_Kong_Gateway.png)
 
 Métriques Kong :
 - `kong_http_requests_total` par route
@@ -621,7 +687,25 @@ brokerx/
 ├── docker-compose.monolith.yml     # Monolith (déprécié)
 ├── docker-compose.lb.yml           # Load balancing
 ├── services/
+│   ├── web-client/                 # Interface utilisateur
+│   │   ├── Dockerfile
+│   │   ├── Gemfile
+│   │   ├── config/routes.rb
+│   │   ├── app/
+│   │   │   ├── controllers/
+│   │   │   │   ├── static_controller.rb
+│   │   │   │   ├── portfolios_controller.rb
+│   │   │   │   ├── orders_controller.rb
+│   │   │   │   └── api/v1/proxy_controller.rb
+│   │   │   ├── views/
+│   │   │   │   ├── static/index.html.erb
+│   │   │   │   ├── portfolios/show.html.erb
+│   │   │   │   └── orders/index.html.erb
+│   │   │   └── assets/stylesheets/
+│   │   └── public/js/orders.js
 │   ├── gateway/kong.yml            # Kong configuration
+│   ├── clients-service/
+│   ├── portfolios-service/
 │   ├── orders-service/
 │   │   ├── lib/event_bus.rb        # EventBus Redis
 │   │   └── app/sagas/trading_saga.rb
@@ -636,7 +720,11 @@ brokerx/
 ### B. Commandes Utiles
 
 ```bash
+# Démarrer tous les services (microservices + web-client)
+docker compose up -d
+
 # Logs en temps réel
+docker compose logs -f web-client
 docker compose logs -f orders-service
 
 # Métriques Prometheus
@@ -646,12 +734,30 @@ curl http://localhost:3003/metrics
 docker exec -it brokerx-redis redis-cli -n 15 PUBSUB CHANNELS
 
 # Health check all services
-for port in 3001 3002 3003; do
+for port in 8888 3001 3002 3003; do
   curl -s http://localhost:$port/health | jq .
 done
+
+# Accès aux interfaces
+# Web Client:  http://localhost:8888
+# Kong Admin:  http://localhost:8001
+# Grafana:     http://localhost:3050
 ```
 
-### C. Liens Documentation
+### C. Web Client - Routes API Proxy
+
+| Route Web Client | Méthode | Route Kong → Service |
+|------------------|---------|----------------------|
+| `/api/v1/clients` | POST | `/api/v1/clients` → Clients |
+| `/api/v1/clients/:id/verify_email` | POST | `/api/v1/clients/:id/verify_email` → Clients |
+| `/api/v1/auth/login` | POST | `/api/v1/auth/login` → Clients |
+| `/api/v1/auth/verify_mfa` | POST | `/api/v1/auth/verify_mfa` → Clients |
+| `/api/v1/portfolio` | GET | `/api/v1/portfolio` → Portfolios |
+| `/api/v1/deposits` | POST | `/api/v1/deposits` → Portfolios |
+| `/api/v1/orders` | GET/POST | `/api/v1/orders` → Orders |
+| `/api/v1/orders/:id/cancel` | POST | `/api/v1/orders/:id/cancel` → Orders |
+
+### D. Liens Documentation
 
 - [UC-07 Appariement](../use_cases/UC-07-Appariement-Ordres.md)
 - [UC-08 Notifications](../use_cases/UC08_confirmation_execution_notifications.md)

@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '3.2.2'
+
+# Rails - Full stack for views
+gem 'rails', '~> 7.1.0'
+
+# Web server
+gem 'puma', '~> 6.0'
+
+# HTTP client for API calls to microservices
+gem 'faraday', '~> 2.7'
+
+# CORS
+gem 'rack-cors', '~> 2.0'
+
+# Environment variables
+gem 'dotenv-rails', '~> 2.8'
+
+# Bootsnap for faster boot
+gem 'bootsnap', require: false
+
+# Asset pipeline
+gem 'sprockets-rails', '~> 3.4'
+
+group :development do
+  gem 'debug', '~> 1.8'
+end

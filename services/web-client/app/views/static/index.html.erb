@@ -1,0 +1,367 @@
+<!-- Header -->
+<header class="header">
+    <div class="container">
+    <nav class="nav">
+        <div class="logo">Broker<span>X+</span> <small style="font-size:0.7rem;color:#77ab59;">(Microservices)</small></div>
+            <ul class="nav-links">
+                <li><a href="#features">Fonctionnalités</a></li>
+                <li><a href="#how">Comment ça marche</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+        <div style="display:flex; gap:12px; align-items:center;">
+        <a id="createBtn" class="cta-button" href="#" style="background:#48bb78;color:#fff">Créer un compte</a>
+        <a id="loginBtn" class="cta-button" href="#">Se connecter</a>
+        </div>
+    </nav>
+    </div>
+</header>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <h1>Investissez en toute simplicité</h1>
+        <p>Créez un compte, créditez votre portefeuille, et passez vos ordres d'achat/vente.</p>
+        <p style="font-size:0.95rem;opacity:0.8;margin-bottom:1rem;">Client Web connecté aux Microservices via Kong Gateway</p>
+        <a href="#how" class="cta-button">Voir comment ça marche</a>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <h2 class="section-title">Ce que vous pouvez faire</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">1</div>
+                <h3>Créer un compte</h3>
+                <p>Inscrivez-vous en quelques clics. Pour sécuriser l'accès, un code MFA (double vérification) vous est envoyé.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">2</div>
+                <h3>Approvisionner votre portefeuille</h3>
+                <p>Effectuez un dépôt virtuel pour disposer de liquidités et pouvoir passer des ordres d'achat.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">3</div>
+                <h3>Passer des ordres</h3>
+                <p>Choisissez un symbole, le type d'ordre (marché/limite), la quantité et validez votre transaction.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how" class="architecture">
+    <div class="container">
+        <h2 class="section-title">Comment ça marche</h2>
+        <div class="arch-diagram">
+            <div class="arch-layer">
+                <h4>1. Inscription et connexion</h4>
+                <p>Créez votre compte puis connectez-vous. Pour confirmer votre identité, nous vous envoyons un code MFA par e‑mail. Entrez ce code pour accéder à votre espace.</p>
+            </div>
+            <div class="arch-layer">
+                <h4>2. Dépôt de fonds (virtuel)</h4>
+                <p>Rendez-vous dans « Mon portefeuille » et effectuez un dépôt. Le montant est immédiatement ajouté à votre solde disponible.</p>
+            </div>
+            <div class="arch-layer">
+                <h4>3. Passer un ordre</h4>
+                <p>Sur la page « Passer un ordre », indiquez le symbole (ex. AAPL), le type d'ordre (marché ou limite), la quantité et, si besoin, le prix. Confirmez pour envoyer.</p>
+            </div>
+            <div class="arch-layer">
+                <h4>4. Suivre votre portefeuille</h4>
+                <p>Consultez à tout moment votre solde disponible, la part réservée pour vos ordres en cours et l'historique de vos dépôts.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="faq" class="status">
+    <div class="container">
+        <h2 class="section-title">Questions fréquentes</h2>
+        <div class="status-grid">
+            <div class="status-item">
+                <h3>Pourquoi la double vérification (MFA) ?</h3>
+                <p>Elle sécurise l'accès à votre compte en demandant un code unique envoyé par e‑mail lors de la connexion.</p>
+            </div>
+            <div class="status-item">
+                <h3>Mon dépôt est‑il réel ?</h3>
+                <p>Non, il est virtuel et sert à simuler des opérations en toute sécurité.</p>
+            </div>
+            <div class="status-item">
+                <h3>Puis‑je annuler un ordre ?</h3>
+                <p>Oui, tant qu'il n'est pas déjà exécuté. Les fonds réservés sont alors remis à disposition.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Architecture Section -->
+<section id="architecture" class="architecture">
+    <div class="container">
+        <h2 class="section-title">Architecture Microservices</h2>
+        <div class="arch-diagram">
+            <div class="arch-layer">
+                <h4>Web Client (Ce service)</h4>
+                <p>Application Rails servant les pages HTML - Se connecte aux microservices via Kong Gateway</p>
+            </div>
+            <div class="arch-layer">
+                <h4>Kong Gateway (Port 8080)</h4>
+                <p>API Gateway routant les requêtes vers les microservices appropriés</p>
+            </div>
+            <div class="arch-layer">
+                <h4>Clients Service (Port 3001)</h4>
+                <p>Gestion des comptes utilisateurs, authentification, MFA</p>
+            </div>
+            <div class="arch-layer">
+                <h4>Portfolios Service (Port 3002)</h4>
+                <p>Gestion des portefeuilles, soldes, dépôts</p>
+            </div>
+            <div class="arch-layer">
+                <h4>Orders Service (Port 3003)</h4>
+                <p>Gestion des ordres d'achat/vente, exécution</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p>&copy; 2025 BrokerX+. Projet académique LOG430 - Architecture Logicielle Avancée.</p>
+        <p>Architecture Microservices • Kong Gateway • Rails API</p>
+    </div>
+</footer>
+
+<script>
+    // --- Login modal logic ---
+    const loginBtn = document.getElementById('loginBtn');
+    const createModalHtml = `
+    <div id="createModal" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:2000;">
+        <div style="background:#fff;padding:24px;border-radius:8px;max-width:520px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+            <h2 style="margin-bottom:8px;color:#2d3748">Créer un compte</h2>
+            <p style="margin:0 0 12px 0;color:#4a5568;font-size:0.95rem">Remplissez le formulaire pour créer un compte client.</p>
+            <form id="createForm">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <input id="firstName" placeholder="Prénom" required style="padding:10px;border:1px solid #e2e8f0;border-radius:6px;" />
+                    <input id="lastName" placeholder="Nom" required style="padding:10px;border:1px solid #e2e8f0;border-radius:6px;" />
+                </div>
+                <div style="margin-bottom:8px;"><input id="regEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                <div style="margin-bottom:8px;"><input id="dob" type="date" placeholder="Date de naissance" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                <div style="margin-bottom:12px;"><input id="regPassword" type="password" placeholder="Mot de passe" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" id="cancelCreate" style="background:#edf2ff;color:#4a5568;padding:10px 14px;border-radius:8px;border:none;">Annuler</button>
+                    <button type="submit" style="background:#48bb78;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Créer</button>
+                </div>
+                <p id="createFeedback" style="margin-top:10px;color:#e53e3e;display:none"></p>
+            </form>
+        </div>
+    </div>
+    `;
+
+    const loginModalHtml = `
+    <div id="loginModal" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:2000;">
+        <div style="background:#fff;padding:24px;border-radius:8px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+            <h2 style="margin-bottom:8px;color:#2d3748">Se connecter</h2>
+            <p style="margin:0 0 12px 0;color:#4a5568;font-size:0.95rem">Entrez vos identifiants pour vous connecter.</p>
+            <form id="loginForm">
+                <div style="margin-bottom:8px;"><input id="loginEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                <div style="margin-bottom:12px;"><input id="loginPassword" type="password" placeholder="Mot de passe" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;"/></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" id="cancelLogin" style="background:#edf2ff;color:#4a5568;padding:10px 14px;border-radius:8px;border:none;">Annuler</button>
+                    <button type="submit" style="background:#667eea;color:#fff;padding:10px 14px;border-radius:8px;border:none;">Se connecter</button>
+                </div>
+                <p id="loginFeedback" style="margin-top:10px;color:#e53e3e;display:none"></p>
+            </form>
+        </div>
+    </div>
+    `;
+
+    function openLoginModal() {
+        if (document.getElementById('loginModal')) return;
+        document.body.insertAdjacentHTML('beforeend', loginModalHtml);
+        const cancel = document.getElementById('cancelLogin');
+        const form = document.getElementById('loginForm');
+        const feedback = document.getElementById('loginFeedback');
+
+        cancel.addEventListener('click', closeLoginModal);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            feedback.style.display = 'none';
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    feedback.textContent = data.error || data.message || 'Erreur de connexion';
+                    feedback.style.display = 'block';
+                    return;
+                }
+                if (data.mfa_required) {
+                    const code = prompt('Un code a été envoyé par e-mail. Entrez le code MFA :');
+                    if (!code) {
+                        feedback.textContent = 'MFA requis';
+                        feedback.style.display = 'block';
+                        return;
+                    }
+                    const verifyRes = await fetch('/api/v1/auth/verify_mfa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ email, code })
+                    });
+                    const verifyData = await verifyRes.json();
+                    if (!verifyRes.ok) {
+                        feedback.textContent = verifyData.error || 'MFA invalide';
+                        feedback.style.display = 'block';
+                        return;
+                    }
+                    feedback.style.color = '#2f855a';
+                    feedback.textContent = 'Connecté';
+                    feedback.style.display = 'block';
+                    if (verifyData.token) {
+                        localStorage.setItem('auth_token', verifyData.token);
+                        window.location.href = '/orders';
+                        return;
+                    }
+                    setTimeout(closeLoginModal, 800);
+                    return;
+                }
+                feedback.style.color = '#2f855a';
+                feedback.textContent = 'Connecté';
+                feedback.style.display = 'block';
+                if (data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                    window.location.href = '/orders';
+                    return;
+                }
+                setTimeout(closeLoginModal, 800);
+            } catch (err) {
+                feedback.textContent = 'Impossible de contacter le serveur';
+                feedback.style.display = 'block';
+            }
+        });
+    }
+
+    function closeLoginModal() {
+        const node = document.getElementById('loginModal');
+        if (node) node.remove();
+    }
+
+    loginBtn && loginBtn.addEventListener('click', (e) => { e.preventDefault(); openLoginModal(); });
+
+    const createBtn = document.getElementById('createBtn');
+
+    function openCreateModal() {
+        if (document.getElementById('createModal')) return;
+        document.body.insertAdjacentHTML('beforeend', createModalHtml);
+        const cancel = document.getElementById('cancelCreate');
+        const form = document.getElementById('createForm');
+        const feedback = document.getElementById('createFeedback');
+
+        cancel.addEventListener('click', () => { const n = document.getElementById('createModal'); if (n) n.remove(); });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            feedback.style.display = 'none';
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const password = document.getElementById('regPassword').value;
+            
+            // Validation côté client
+            if (password.length < 8) {
+                feedback.textContent = 'Le mot de passe doit contenir au moins 8 caractères';
+                feedback.style.display = 'block';
+                return;
+            }
+            
+            const payload = {
+                client: {
+                    email: document.getElementById('regEmail').value,
+                    name: `${firstName} ${lastName}`,
+                    password: password
+                }
+            };
+
+            try {
+                const res = await fetch('/api/v1/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    feedback.textContent = data.error || (data.errors && JSON.stringify(data.errors)) || 'Erreur lors de la création';
+                    feedback.style.display = 'block';
+                    return;
+                }
+                feedback.style.color = '#2f855a';
+                feedback.textContent = 'Compte créé. Un code de vérification a été envoyé à votre email.';
+                feedback.style.display = 'block';
+
+                const clientId = data.id || data.client?.id;
+                const token = prompt('Entrez le code de vérification envoyé par e-mail pour activer votre compte :');
+                if (token && clientId) {
+                    try {
+                        const verifyRes = await fetch(`/api/v1/clients/${clientId}/verify_email`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({ token: token })
+                        });
+                        const verifyData = await verifyRes.json();
+                        if (!verifyRes.ok) {
+                            alert('Vérification échouée: ' + (verifyData.error || 'error'));
+                        } else {
+                            alert('Compte activé. Vous pouvez maintenant vous connecter.');
+                            const n = document.getElementById('createModal'); if (n) n.remove();
+                        }
+                    } catch (err) {
+                        alert('Impossible de contacter le serveur pour vérification');
+                    }
+                } else if (!clientId) {
+                    alert('Compte créé ! Consultez votre email pour le code de vérification, puis connectez-vous.');
+                    const n = document.getElementById('createModal'); if (n) n.remove();
+                } else {
+                    setTimeout(() => { const n = document.getElementById('createModal'); if (n) n.remove(); }, 1200);
+                }
+            } catch (err) {
+                feedback.textContent = 'Impossible de contacter le serveur';
+                feedback.style.display = 'block';
+            }
+        });
+    }
+
+    createBtn && createBtn.addEventListener('click', (e) => { e.preventDefault(); openCreateModal(); });
+
+    // Smooth scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // Animation on scroll
+    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.feature-card, .arch-layer, .status-item').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+</script>

@@ -1,0 +1,36 @@
+@startuml web_client_proxy_flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title Web Client - Proxy Architecture (BFF Pattern)
+
+actor "Browser" as browser
+participant "Web Client\n(:8888)" as webclient
+participant "Kong Gateway\n(:8080)" as kong
+participant "Clients Service\n(:3001)" as clients
+participant "Portfolios Service\n(:3002)" as portfolios
+participant "Orders Service\n(:3003)" as orders
+
+== Page Load ==
+browser -> webclient : GET /orders
+webclient --> browser : HTML + CSS + JS
+
+== API Proxy Flow ==
+browser -> webclient : POST /api/v1/orders
+note right: JWT in header
+webclient -> kong : POST /api/v1/orders
+note right: Faraday HTTP Client\nForward headers
+kong -> orders : Route to Orders Service
+orders --> kong : Order created
+kong --> webclient : JSON response
+webclient --> browser : JSON response
+
+== Authentication Flow ==
+browser -> webclient : POST /api/v1/auth/login
+webclient -> kong : POST /api/v1/auth/login
+kong -> clients : Route to Clients Service
+clients --> kong : { mfa_required: true }
+kong --> webclient : MFA required
+webclient --> browser : Prompt MFA code
+
+@enduml

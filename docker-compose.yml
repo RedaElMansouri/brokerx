@@ -255,7 +255,36 @@ services:
       retries: 3
 
   # ===========================================
-  # OBSERVABILITY (optional)
+  # WEB CLIENT
+  # ===========================================
+
+  web-client:
+    build:
+      context: ./services/web-client
+      dockerfile: Dockerfile
+    container_name: brokerx-web-client
+    ports:
+      - "8888:3000"
+    environment:
+      RAILS_ENV: development
+      KONG_GATEWAY_URL: http://kong:8000
+      SECRET_KEY_BASE: web_client_secret_base_change_in_production
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      kong:
+        condition: service_healthy
+    command: >
+      bash -c "
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # OBSERVABILITY
   # ===========================================
 
   prometheus:

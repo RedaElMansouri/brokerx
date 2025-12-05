@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrokerX+ - Web Client</title>
+    <%= stylesheet_link_tag "application", media: "all" %>
+    <% if Rails.application.assets&.find_asset('orders') %>
+      <%= stylesheet_link_tag "orders", media: "all" %>
+    <% end %>
+  </head>
+  <body>
+    <%= yield %>
+  </body>
+</html>

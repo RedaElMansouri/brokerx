@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'rails'
+
+Dir[File.join(__dir__, 'tasks', '**', '*.rake')].each { |f| load f }

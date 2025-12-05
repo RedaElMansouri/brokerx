@@ -1,0 +1,14 @@
+<div class="container" style="padding-top:80px;">
+  <%= render 'header' %>
+  <section class="feature-card" style="max-width:720px;margin:0 auto;">
+    <h1>Passer un ordre <small style="font-size:0.7rem;color:#77ab59;">(Microservices)</small></h1>
+
+    <%= render 'market_panel' %>
+
+    <%= render 'order_form' %>
+  </section>
+
+  <%= render 'orders_table' %>
+
+  <script src="/js/orders.js?v=<%= Time.now.to_i %>"></script>
+</div>

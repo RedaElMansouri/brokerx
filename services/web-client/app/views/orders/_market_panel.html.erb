@@ -1,0 +1,24 @@
+<div id="marketPanel" class="panel">
+    <div class="panel-header">
+    <strong>Données de marché (temps réel)</strong>
+        <label class="muted">
+        <input type="checkbox" id="throttleToggle" /> Mode throttled
+    </label>
+    </div>
+    <div id="wsStatus" class="status muted">Statut: <span id="wsStatusText">initialisation…</span></div>
+    <div id="degradedBanner" class="banner-degraded">Flux dégradé : données moins fréquentes</div>
+    <div class="grid-2 mt-2">
+    <div>
+            <div class="muted">Dernier QUOTE</div>
+            <div id="quoteBox" class="mono-box">
+        <em>Aucun</em>
+        </div>
+    </div>
+    <div>
+            <div class="muted">ORDERBOOK</div>
+            <div id="bookBox" class="mono-box">
+        <em>Aucun</em>
+        </div>
+    </div>
+    </div>
+</div>

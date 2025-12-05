@@ -1,0 +1,36 @@
+@startuml web_client_architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title Architecture du Web Client
+
+package "Web Client (:8888)" as webclient {
+    component "Views\n(ERB/HTML)" as views
+    component "Controllers\n(Rails)" as controllers
+    component "Proxy API\n(Faraday)" as proxy
+    
+    views --> controllers
+    controllers --> proxy
+}
+
+package "Kong Gateway (:8080)" as kong {
+    component "Routing" as routing
+    component "Auth" as auth
+}
+
+package "Microservices" as services {
+    component "Clients\n(:3001)" as clients
+    component "Portfolios\n(:3002)" as portfolios
+    component "Orders\n(:3003)" as orders
+}
+
+actor "Browser" as browser
+
+browser --> webclient : HTTP/HTML
+proxy --> kong : HTTP/REST
+routing --> clients
+routing --> portfolios
+routing --> orders
+
+@enduml

@@ -1,0 +1,95 @@
+@startuml strangler_fig_migration
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam rectangleBackgroundColor #F5F5F5
+skinparam componentStyle rectangle
+
+title Pattern Strangler Fig - Migration BrokerX
+
+legend top left
+  |= Phase |= Description |
+  | Phase 1 | Monolith complet |
+  | Phase 2 | Extraction progressive |
+  | Phase 3 | Microservices complets |
+endlegend
+
+rectangle "Phase 1: Monolith" as phase1 {
+    rectangle "Monolith BrokerX" as mono1 #LightBlue {
+        component "Clients" as c1
+        component "Portfolios" as p1
+        component "Orders" as o1
+        component "Database" as db1
+    }
+}
+
+rectangle "Phase 2: Migration Progressive" as phase2 {
+    rectangle "Monolith (Façades)" as mono2 #LightYellow {
+        component "ClientsFacade" as cf
+        component "PortfoliosFacade" as pf
+        component "OrdersFacade" as of
+    }
+    
+    rectangle "Microservices" as micro2 #LightGreen {
+        component "Clients\nService" as cs2
+        component "Portfolios\nService" as ps2
+        component "Orders\nService" as os2
+    }
+    
+    cf --> cs2 : HTTP
+    pf --> ps2 : HTTP
+    of --> os2 : HTTP
+}
+
+rectangle "Phase 3: Microservices" as phase3 {
+    rectangle "Kong Gateway" as kong #Orange {
+        component "API Routing" as routing
+    }
+    
+    rectangle "Web Client" as wc #LightCyan {
+        component "Rails Views" as views
+        component "Proxy API" as proxy
+    }
+    
+    rectangle "Services Indépendants" as micro3 #LightGreen {
+        component "Clients\nService\n(:3001)" as cs3
+        component "Portfolios\nService\n(:3002)" as ps3
+        component "Orders\nService\n(:3003)" as os3
+    }
+    
+    rectangle "Databases" as dbs {
+        database "postgres-clients" as dbc
+        database "postgres-portfolios" as dbp
+        database "postgres-orders" as dbo
+    }
+    
+    views --> proxy
+    proxy --> routing
+    routing --> cs3
+    routing --> ps3
+    routing --> os3
+    cs3 --> dbc
+    ps3 --> dbp
+    os3 --> dbo
+}
+
+phase1 -[hidden]right-> phase2
+phase2 -[hidden]right-> phase3
+
+note bottom of phase1
+  Architecture initiale
+  monolithique
+end note
+
+note bottom of phase2
+  Façades permettent
+  de router vers
+  microservices ou monolith
+end note
+
+note bottom of phase3
+  Monolith déprécié
+  Web Client + Kong
+  + Services indépendants
+end note
+
+@enduml
